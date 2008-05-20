@@ -3,7 +3,7 @@
 ;   ・加速対応
 ;   ・Word / Excel / VBE / 秀丸等の分割ペインも互換スクロールで操作可能
 ;
-;   単体 / 組込み両対応  2007/10/12 (AutoHotkey 1.0.47.04)
+;   単体 / 組込み両対応  2008/05/20 (AutoHotkey 1.0.47.06)
 ;   組込み時 
 ;     #Include WheelScroll.ahk
 ;     Gosub,WheelInit             ;初期化 :AutoExecuteセクションに記述
@@ -35,7 +35,7 @@ WheelInit:
 ;   初期化
 ;-------------------------------------------------------
     ;--- オプション ---
-    DefaultScrollMode = 1           ;基本動作モード  0:WHELL 1:互換SCROLL
+    DefaultScrollMode = 0           ;基本動作モード  0:WHELL 1:互換SCROLL
     AcclSpeed         = 1           ;加速時の倍率(0で加速OFF)
     AcclTOut          = 300         ;加速タイムアウト値(ms)
     ScrlCount         = 2           ;互換スクロール行数
@@ -48,6 +48,7 @@ WheelInit:
                   ,VbaWindow            ;VisualBasicEditor
                   ,_WwB                 ;MS-Word(編集領域全体)
                   ,Excel7               ;MS-Excel
+;;;;;                  ,OModule                ;MS-Access97   2007.05.20
 
     ;MDI事前アクティブ化リスト (ｱｸﾃｨﾌﾞ子ｳｨﾝﾄﾞｳのみﾊﾞｰがあるｱﾌﾟﾘなど)
     MdiActivateList = Excel7            ;MS-Excel
@@ -73,22 +74,46 @@ return
 ;==============================================
 ;     Hotkeys
 ;==============================================
+WheelDown::     WheelRedirect()
+WheelUp::       WheelRedirect()
+
 ;Shiftホイールで横スクロール
 +WheelDown::    WheelRedirect(1)
 +WheelUp::      WheelRedirect(1)
 
-WheelDown::     WheelRedirect()
-WheelUp::       WheelRedirect()
+/* ※※※※※ Logicoolマウス用 設定サンプル ※※※※※※※※※※※※※※
 
+;Logicoolマウスチルト1(uberOptionsで 左:F13 右:F14が割り当てられていると仮定)
+; ただし押下解除情報は正しく取れないのでuser.xmlを手動にて編集し
+; キーリピートを発生させる必要あり
+F13::   WheelRedirect(1,0)
+F14::   WheelRedirect(1,1)
+
+;Logicoolマウスチルト2(SetPointで 左:F11 右:F12に割り当てられていると仮定)
+F11::       SetTimer,TiltRepeatL,80
+F11 up::    SetTimer,TiltRepeatL,OFF
+F12::       SetTimer,TiltRepeatR,80
+F12 up::    SetTimer,TiltRepeatR,OFF
+TiltRepeatL:
+    WheelRedirect(1,0)
+return
+TiltRepeatR:
+    WheelRedirect(1,1)
+return
+;※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
+*/
+
+;
 
 ;==============================================
 ;     Functions
 ;==============================================
-WheelRedirect(mode=0)
-;-------------------------------------------------------
+WheelRedirect(mode=0,dir="")
+;-------------------------------------------------------------
 ;   ホイールリダイレクト
-;   mode 0:縦スクロール  1:横スクロール
-;-------------------------------------------------------
+;   mode 0:縦スクロール  1:横スクロール (省略時:縦)
+;   dir  0:UP(LEFT)      1:DOWN(RIGHT)  (省略時:ホイール準拠)
+;-------------------------------------------------------------
 {
     global  DefaultScrollMode, AcclSpeed, AcclTOut, ScrlCount
            ,VDisavledList, VScroolList, MdiActivateList
@@ -138,8 +163,8 @@ WheelRedirect(mode=0)
     }
 
     if (!scmode)
-            MOUSEWHELL(ctrl,mx,my,"",AcclSpeed,AcclTOut)
-    Else    SCROLL(ctrl,mode,shwnd,"",ScrlCount,AcclSpeed,AcclTOut)
+            MOUSEWHELL(ctrl,mx,my,dir,AcclSpeed,AcclTOut)
+    Else    SCROLL(ctrl,mode,shwnd,dir,ScrlCount,AcclSpeed,AcclTOut)
 }
 
 GetScrollBarHwnd(byref shwnd, mx,my,Cntlhwnd,mode=0)
@@ -264,7 +289,7 @@ MOUSEWHELL(hwnd,mx,my,dir="", ASpeed=1,ATOut=300)
 
 SCROLL(hwnd,mode=0,shwnd=0,dir="", ScrlCnt=1,ASpeed=1,ATOut=300)
 ;----------------------------------------------------------
-; RDW_SCROLLによる任意コントロールスクロール
+; WM_SCROLLによる任意コントロールスクロール
 ;       hwnd        該当コントロールのウィンドウハンドル
 ;       mode        0:VSCROLL(縦) 1:HSCROLL(横)
 ;       shwnd       スクロールバーのハンドル
