@@ -3,7 +3,7 @@
 ;   ・加速対応
 ;   ・Word / Excel / VBE / 秀丸等の分割ペインも互換スクロールで操作可能
 ;
-;   単体 / 組込み両対応  2008/05/20 (AutoHotkey 1.0.47.06)
+;   単体 / 組込み両対応  2008/05/25 (AutoHotkey 1.0.47.06)
 ;   組込み時 
 ;     #Include WheelScroll.ahk
 ;     Gosub,WheelInit             ;初期化 :AutoExecuteセクションに記述
@@ -41,14 +41,14 @@ WheelInit:
     ScrlCount         = 2           ;互換スクロール行数
 
     ;ホイールで動かすコントロールのクラスリスト
-    VDisavledList = MozillaWindowClass
+    MouseWhellList =MozillaWindowClass
 
     ;互換モードで動かすコントロールのクラスリスト
     VScroolList =  MdiClient            ;MDI親 (MS-Accessなど)
                   ,VbaWindow            ;VisualBasicEditor
                   ,_WwB                 ;MS-Word(編集領域全体)
                   ,Excel7               ;MS-Excel
-;;;;;                  ,OModule                ;MS-Access97   2007.05.20
+;;;;;                  ,OModule                ;MS-Access97   2008.05.20
 
     ;MDI事前アクティブ化リスト (ｱｸﾃｨﾌﾞ子ｳｨﾝﾄﾞｳのみﾊﾞｰがあるｱﾌﾟﾘなど)
     MdiActivateList = Excel7            ;MS-Excel
@@ -76,6 +76,7 @@ return
 ;==============================================
 WheelDown::     WheelRedirect()
 WheelUp::       WheelRedirect()
+
 
 ;Shiftホイールで横スクロール
 +WheelDown::    WheelRedirect(1)
@@ -116,15 +117,16 @@ WheelRedirect(mode=0,dir="")
 ;-------------------------------------------------------------
 {
     global  DefaultScrollMode, AcclSpeed, AcclTOut, ScrlCount
-           ,VDisavledList, VScroolList, MdiActivateList
+           ,MouseWhellList, VScroolList, MdiActivateList
            ,BypassCtlList, NullShwndTabooList, HDisavledList
 
     CoordMode,Mouse,Screen
     MouseGetPos,mx,my,hwnd,ctrl,3
     WinGetClass,wcls, ahk_id %hwnd%
-    SendMessage,0x84,0,% (my<<16)|mx,,ahk_id %ctrl%  ;WM_NCHITTEST
+    SendMessage,0x84,0,% (my<<16)|mx,,ahk_id %ctrl% ;WM_NCHITTEST
     If (ErrorLevel = 0xFFFFFFFF)
         MouseGetPos,,,,ctrl,2
+    ifEqual,ctrl,,  SetEnv,ctrl,%hwnd%              ;2008.05.25
     WinGetClass,ccls,ahk_id %ctrl%
 
     ;無視リストチェック：1階層上のコントロールを制御対象とする
@@ -153,7 +155,7 @@ WheelRedirect(mode=0,dir="")
     scmode := DefaultScrollMode<<1 | mode
     if ccls in %HDisavledList%          ;横スクロール禁止
         scmode &= 0x10
-    if ccls in %VDisavledList%          ;ホイールモード
+    if ccls in %MouseWhellList%         ;ホイールモード
         scmode &= 0x01
     if ccls in %VScroolList%            ;互換モード
         scmode |= 0x10
@@ -281,6 +283,8 @@ MOUSEWHELL(hwnd,mx,my,dir="", ASpeed=1,ATOut=300)
     Else wpalam |= -(delta << 16)       ;down
 
     ; lParam: XY座標
+    my += (my < 0) ? 0xFFFF : 0  ;マルチディスプレイ対策 2009.06.12
+    mx += (mx < 0) ? 0xFFFF : 0
     lpalam := (my << 16) | mx
 
     ;WM_MOUSEWHELL

@@ -1,6 +1,6 @@
 Redirect Scrool Function  スクロール制御 (WheelScroll.ahk)
     単体/組込み両対応 (常駐専用)
-     2008/05/20 (AutoHotkey 1.0.47.06)  by eamat
+     2008/05/25 (AutoHotkey 1.0.47.06)  by eamat
 
 .■動作環境
     AutoHotkey
@@ -81,3 +81,6 @@ Redirect Scrool Function  スクロール制御 (WheelScroll.ahk)
                ・基本動作モードのデフォルト値を 1:互換SCROLL → 0:WHELL に。
                 (今時はホイールの効かないアプリの方が少ないだろうということで)
                ・コメントとか所々説明の変なとこ修正
+
+    2008.05.25 ・コントロールクラスが取れない時はウィンドウクラスを指定するようにした。
+                 (Vieas メインウィンドウ用対策)
