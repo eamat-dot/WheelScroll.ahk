@@ -8,6 +8,12 @@
 ;     #Include WheelScroll.ahk
 ;     Gosub,WheelInit             ;初期化 :AutoExecuteセクションに記述
 ;---------------------------------------------------------------------------
+;   2009.06.12  マルチディスプレイ対策 (Thanks IKKIさん)
+;   2009.07.22  秀丸v8β1   超暫定対応
+;               IKKI氏の WheelAccel.ahk の加速モードを入れ込み
+;               Excelスクロール時にアクティブにならないようにした
+;               (とりあえず TrackWheel.ahkの旧バージョンから貰ってきた)
+
 
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ;   単体起動用
@@ -36,9 +42,23 @@ WheelInit:
 ;-------------------------------------------------------
     ;--- オプション ---
     DefaultScrollMode = 0           ;基本動作モード  0:WHELL 1:互換SCROLL
+
+    ; IKKI氏の WheelAccel.ahk入れ込み 超暫定対応     2009.07.22
+    ; (従来モードは需要なかったら削除するかも)
+    AcclMode          = 1           ; 0:従来の加速モード 1:WheelAccel.ahk の加速モード
+
+    ; AcclMode = 0 オプション
     AcclSpeed         = 1           ;加速時の倍率(0で加速OFF)
     AcclTOut          = 300         ;加速タイムアウト値(ms)
     ScrlCount         = 2           ;互換スクロール行数
+
+    ; AcclMode = 1 オプション
+	; ホイール加速◆改造版
+	minThrottle      := 2           ; 最小加速率
+	maxThrottle      := 7           ; 最大加速率
+	minWheelSpeed    := 5           ; 最小加速率になるホイール回転速度 (ノッチ/秒)
+	maxWheelSpeed    := 30          ; 最大加速率になるホイール回転速度 (ノッチ/秒)
+	WA_Debug         := false       ; true にすると加速率とホイール回転速度が表示される
 
     ;ホイールで動かすコントロールのクラスリスト
     MouseWhellList =MozillaWindowClass
@@ -57,6 +77,7 @@ WheelInit:
     ;無視リスト(バイパスして親コントロールを制御する)
     BypassCtlList =   ScrollBar         ;スクロールバー本体
                     , _WwG              ;MS-Word分割ペイン(一つ上の_WwBで制御)
+                    , Static            ;秀丸v8β 暫定  2009.07.22
 
     ;兄弟スクロールバー : ｽｸﾛｰﾙﾊﾞｰが配下ではなく同列にあるｱﾌﾟﾘ
     BrotherScroolBarList = TkfInnerView.UnicodeClass    ;萌ディタ
@@ -128,6 +149,7 @@ WheelRedirect(mode=0,dir="")
         MouseGetPos,,,,ctrl,2
     ifEqual,ctrl,,  SetEnv,ctrl,%hwnd%              ;2008.05.25
     WinGetClass,ccls,ahk_id %ctrl%
+    mccls := ccls                                   ;2009.07.22    秀丸v8β 対応
 
     ;無視リストチェック：1階層上のコントロールを制御対象とする
     ifInString, BypassCtlList, %ccls%
@@ -142,14 +164,12 @@ WheelRedirect(mode=0,dir="")
         MdiClient := DllCall("GetParent",UInt,ctrl, UInt)
         SendMessage, 0x229, 0,0,,ahk_id %MdiClient% ;WM_MDIGETACTIVE
         if (ctrl != ErrorLevel) {
-            if(ccls = "Excel7")     {               ;Excelカスタム
-                WinActivate, ahk_id %hwnd%
-                MouseClick,Left
-            }
+            if(ccls = "Excel7")                    ;Excelカスタム
+			        ControlClick,,ahk_id %ctrl%     ; (改)MID小窓をクリックして前面にならないようにした 2009.07.22
             Else    PostMessage,0x222, %ctrl%,0,,ahk_id %MdiClient%
         }
     }
-    scnt := GetScrollBarHwnd(shwnd,mx,my,ctrl,mode) ;ｽｸﾛｰﾙﾊﾝﾄﾞﾙ取得
+    scnt := GetScrollBarHwnd(shwnd,mx,my,ctrl,mode,mccls) ;ｽｸﾛｰﾙﾊﾝﾄﾞﾙ取得 2009.07.22
 
     ;スクロール動作指定
     scmode := DefaultScrollMode<<1 | mode
@@ -169,7 +189,7 @@ WheelRedirect(mode=0,dir="")
     Else    SCROLL(ctrl,mode,shwnd,dir,ScrlCount,AcclSpeed,AcclTOut)
 }
 
-GetScrollBarHwnd(byref shwnd, mx,my,Cntlhwnd,mode=0)
+GetScrollBarHwnd(byref shwnd, mx,my,Cntlhwnd,mode=0,mccls="")
 ;----------------------------------------------------------------------------
 ; 該当コントロールのスクロールハンドルを返す
 ;   戻り値 指定方向のスクロールオブジェクト数
@@ -177,6 +197,7 @@ GetScrollBarHwnd(byref shwnd, mx,my,Cntlhwnd,mode=0)
 ;   in     mx,my       マウス位置
 ;          Cntlhwnd    対象コントロールのハンドル
 ;          mode        0:VSCROLL(縦) 1:HSCROLL(横)
+;          mccls       マウス直下のコントロール名称
 ;----------------------------------------------------------------------------
 {
     global BrotherScroolBarList
@@ -187,7 +208,7 @@ GetScrollBarHwnd(byref shwnd, mx,my,Cntlhwnd,mode=0)
 
     ;配下にスクロールバーなし
     ifNotInString, lst, ScrollBar
-    {   ;兄弟指定がある場合は、自分と同列のスクロールバーを探す
+    {    ;兄弟指定がある場合は、自分と同列のスクロールバーを探す
         if pcls in %BrotherScroolBarList%
         {
             Cntlhwnd := DllCall("GetParent",UInt,Cntlhwnd, UInt)
@@ -237,9 +258,11 @@ GetScrollBarHwnd(byref shwnd, mx,my,Cntlhwnd,mode=0)
         }
     }
 
+    ; 2009.07.22 秀丸8β1 超暫定対応
     ;---アクティブペインにしかバーがないアプリ、可能ならペインを切り替える---
-    ;[秀丸]用 カスタム：分割ウィンドウ切り替え
-    if (pcls = "HM32CLIENT") && !((vy1 <= my) && (vy1+vh1 >= my))
+    ;[秀丸]用 カスタム：分割ウィンドウ切り替え 
+    if  (pcls="HM32CLIENT" && !(vy1<=my && vy1+vh1 >= my))  ;秀丸 v7未満
+     || (pcls="Hidemaru32Class" && mccls = "Static")         ;     v8β1
         PostMessage, 0x111, 142,  0, ,ahk_id %Cntlhwnd%   ;WM_COMMAND
     ;------------------------------------------------------------------------
 
@@ -259,14 +282,21 @@ MOUSEWHELL(hwnd,mx,my,dir="", ASpeed=1,ATOut=300)
 ;       ATOut        :加速タイムアウト値(ms)
 ;----------------------------------------------------------------------------
 {
-    static delta
+    ; IKKI氏の WheelAccel.ahk入れ込み 超暫定対応     2009.07.22
+    global  AcclMode
+    if (AcclMode)  {
+        delta := 120 * WA_Throttle()
+    }
+    else {
+        static delta
 
-    ;ホイール加速
-    If (A_PriorHotkey <> A_ThisHotkey) || (ATOut < A_TimeSincePriorHotkey) 
-       || (0 >= ASpeed)
-        delta = 120
-    Else If (delta < 1000)
-        delta += 120 * ASpeed
+        ;ホイール加速
+        If (A_PriorHotkey <> A_ThisHotkey) || (ATOut < A_TimeSincePriorHotkey) 
+           || (0 >= ASpeed)
+            delta = 120
+        Else If (delta < 1000)
+            delta += 120 * ASpeed
+    }
 
     ; wParam: Delta(移動量)
     wpalam  :=GetKeyState("LButton")     | GetKeyState("RButton") <<1 
@@ -329,3 +359,70 @@ SCROLL(hwnd,mode=0,shwnd=0,dir="", ScrlCnt=1,ASpeed=1,ATOut=300)
     PostMessage, %msg%, 8, %shwnd%, , ahk_id %hwnd% ;SB_ENDSCROLL
 }
 
+WA_Throttle() {
+;----------------------------------------------------------
+; 加速率を線形補間で計算する
+; 	minThrottle   = 最小加速率
+; 	maxThrottle   = 最大加速率
+; 	minWheelSpeed = 最小加速率になるホイール回転速度 (ノッチ/秒)
+; 	maxWheelSpeed = 最大加速率になるホイール回転速度 (ノッチ/秒)
+; 	WA_Debug      = デバッグモード
+;----------------------------------------------------------
+	global minThrottle, maxThrottle, minWheelSpeed, maxWheelSpeed, WA_Debug, tooltiptext
+	static prevspd := 0
+	if (A_PriorHotkey <> A_ThisHotkey || A_TimeSincePriorHotkey <= 0) {
+		gosub WA_EraseToolTip
+		prevspd := 0
+		nextspd := 0
+	} else {
+		nextspd := 1000 / A_TimeSincePriorHotkey ; 現在のホイール回転速度 (ノッチ/秒)
+	}
+	spd := (prevspd + nextspd) / 2 ; 直近 2 ノッチの平均回転速度 (ノッチ/秒)
+	if (spd < minWheelSpeed) {
+		thr := 1
+	} else {
+		thr := floor((spd - minWheelSpeed) * (maxThrottle - minThrottle) / (maxWheelSpeed - minWheelSpeed) + minThrottle)
+	}
+	if (thr > maxThrottle) {
+		thr := maxThrottle
+	}
+	
+	if (WA_Debug) {
+		tooltiptext .= "x" . thr . " (" . round(spd, 1)
+; 		tooltiptext .= " = avg(" . round(nextspd, 1) . " + " . round(prevspd, 1) . ")"
+		tooltiptext .= " notch/s)`n"
+		tooltip % tooltiptext
+		settimer WA_EraseToolTip, 10000
+	}
+	prevspd := nextspd
+	return thr
+}
+
+WA_EraseToolTip:
+;----------------------------------------------------------
+; ツールチップを消す
+;----------------------------------------------------------
+	tooltiptext := ""
+	tooltip
+	settimer WA_EraseToolTip, off
+	return
+
+;----------------------------------------------------------
+; <参考> ホイール加速の別実装
+; http://f57.aaa.livedoor.jp/~atechs/index.php?plugin=attach&pcmd=open&file=AutoHotKey%20Thread.htm&refer=Download
+; 538 ：233：2005/05/09(月) 01:41:23 ID:zU71pxGA
+;     WheelUp::
+;     WheelDown::
+;     　MouseGetPos,x,y,hwnd,cls
+;     　MouseGetPos,,,,cls2,1
+;     　if(cls != cls2)
+;     　　cls := cls2
+;     　accel := (A_PriorHotkey == A_ThisHotkey && A_TimeSincePriorHotkey < 80) + (A_PriorHotkey == A_ThisHotkey && A_TimeSincePriorHotkey < 250) + 1
+;     　wParam := 0x780000 * accel * (1 - 2 *(A_ThisHotkey = "WheelDown"))
+;     　lParam := x + y*0x10000
+;     　PostMessage,0x20A, %wParam%,%lParam%, %cls%, ahk_id %hwnd%
+;     　return
+;     ホイールリダイレクト。例によって加速付き。
+;     だいぶ短くなった。今のところMDIを含め殆ど動ようになった。
+;     W2kSP4, AHK1.0.32.00
+;----------------------------------------------------------
