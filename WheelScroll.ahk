@@ -1,32 +1,35 @@
+﻿;
+; Redirect Scrool Function  スクロール制御
+;   ・加速対応
+;   ・Word / Excel / VBE / 秀丸等の分割ペインも互換スクロールで操作可能
 ;
-; Redirect Scrool Function  �X�N���[������
-;   �E�����Ή�
-;   �EWord / Excel / VBE / �G�ۓ��̕����y�C�����݊��X�N���[���ő���\
-;
-;   �P�� / �g���ݗ��Ή�  2008/05/25 (AutoHotkey 1.0.47.06)
-;   �g���ݎ� 
+;   単体 / 組込み両対応  2008/05/25 (AutoHotkey 1.0.47.06)
+;   組込み時 
 ;     #Include WheelScroll.ahk
-;     Gosub,WheelInit             ;������ :AutoExecute�Z�N�V�����ɋL�q
+;     Gosub,WheelInit             ;初期化 :AutoExecuteセクションに記述
 ;---------------------------------------------------------------------------
-;   2009.06.12  �}���`�f�B�X�v���C�΍� (Thanks IKKI����)
-;   2009.07.22  �G��v8��1   ���b��Ή�
-;               IKKI���� WheelAccel.ahk �̉������[�h����ꍞ��
-;               Excel�X�N���[�����ɃA�N�e�B�u�ɂȂ�Ȃ��悤�ɂ���
-;               (�Ƃ肠���� TrackWheel.ahk�̋��o�[�W�����������Ă���)
-
+;   2009.06.12  マルチディスプレイ対策 (Thanks IKKIさん)
+;   2009.07.22  秀丸v8β1   超暫定対応
+;               IKKI氏の WheelAccel.ahk の加速モードを入れ込み
+;               Excelスクロール時にアクティブにならないようにした
+;               (とりあえず TrackWheel.ahkの旧バージョンから貰ってきた)
+;   2012.11.08  U64対応 Uint → Ptr
+;   2014.03.18  コメント修正
 
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++
-;   �P�̋N���p
+;   単体起動用
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#NoEnv                  ; �ϐ��������߂���Ƃ��A���ϐ��𖳎�����
-#SingleInstance FORCE   ; �����v���Z�X�Ŏ��s�̋֎~
-#WinActivateForce       ; �^�X�N�o�[�A�C�R���_�Ŗh�~
-#MaxHotkeysPerInterval 80 ;�L�[���s�[�g�G���[�h�~�p
+#NoEnv                  ; 変数名を解釈するとき、環境変数を無視する
+#SingleInstance FORCE   ; 複数プロセスで実行の禁止
+#WinActivateForce       ; タスクバーアイコン点滅防止
+#HotkeyInterval  10000     ;高速スクロール対策
+#MaxHotkeysPerInterval 700 
+
 
 WheelAutoExecute:
-    SendMode Input              ; ���M���Ƀ��[�U�[�������񂵂ɂ���B
+    SendMode Input              ; 送信中にユーザー操作を後回しにする。
     Gosub,WheelInit
-    Hotkey,^ESC, WheelExit     ;�I���F [Ctrl]+[ESC]
+    Hotkey,^ESC, WheelExit     ;終了： [Ctrl]+[ESC]
 return
 WheelExit:
     exitapp
@@ -34,84 +37,91 @@ return
 
 
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++
-;   �P��/�g���ݗ��p
+;   単体/組込み両用
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++
 WheelInit:
 ;-------------------------------------------------------
-;   ������
+;   初期化
 ;-------------------------------------------------------
-    ;--- �I�v�V���� ---
-    DefaultScrollMode = 0           ;��{���샂�[�h  0:WHELL 1:�݊�SCROLL
+    ;--- オプション ---
+    DefaultScrollMode = 0           ;基本動作モード  0:WHELL 1:互換SCROLL
 
-    ; IKKI���� WheelAccel.ahk���ꍞ�� ���b��Ή�     2009.07.22
-    ; (�]�����[�h�͎��v�Ȃ�������폜���邩��)
-    AcclMode          = 1           ; 0:�]���̉������[�h 1:WheelAccel.ahk �̉������[�h
+    ; IKKI氏の WheelAccel.ahk入れ込み 超暫定対応     2009.07.22
+    AcclMode          = 0           ; 0:従来の加速モード 1:WheelAccel.ahk の加速モード
 
-    ; AcclMode = 0 �I�v�V����
-    AcclSpeed         = 1           ;�������̔{��(0�ŉ���OFF)
-    AcclTOut          = 300         ;�����^�C���A�E�g�l(ms)
-    ScrlCount         = 2           ;�݊��X�N���[���s��
+    ; AcclMode = 0 オプション
+    AcclSpeed         = 1           ;加速時の倍率(0で加速OFF)
+    AcclTOut          = 300         ;加速タイムアウト値(ms)
+    ScrlCount         = 5           ;互換スクロール行数
 
-    ; AcclMode = 1 �I�v�V����
-	; �z�C�[��������������
-	minThrottle      := 2           ; �ŏ�������
-	maxThrottle      := 7           ; �ő������
-	minWheelSpeed    := 5           ; �ŏ��������ɂȂ�z�C�[����]���x (�m�b�`/�b)
-	maxWheelSpeed    := 30          ; �ő�������ɂȂ�z�C�[����]���x (�m�b�`/�b)
-	WA_Debug         := false       ; true �ɂ���Ɖ������ƃz�C�[����]���x���\�������
+    ; AcclMode = 1 オプション
+	; ホイール加速◆改造版
+	minThrottle      := 2           ; 最小加速率
+	maxThrottle      := 7           ; 最大加速率
+	minWheelSpeed    := 5           ; 最小加速率になるホイール回転速度 (ノッチ/秒)
+	maxWheelSpeed    := 30          ; 最大加速率になるホイール回転速度 (ノッチ/秒)
 
-    ;�z�C�[���œ������R���g���[���̃N���X���X�g
+;	minThrottle      := 10           ; 最小加速率
+;	maxThrottle      := 30           ; 最大加速率
+;	minWheelSpeed    := 20           ; 最小加速率になるホイール回転速度 (ノッチ/秒)
+;	maxWheelSpeed    := 120          ; 最大加速率になるホイール回転速度 (ノッチ/秒)
+	WA_Debug         := false       ; true にすると加速率とホイール回転速度が表示される
+
+    ;ホイールで動かすコントロールのクラスリスト
     MouseWhellList =MozillaWindowClass
 
-    ;�݊����[�h�œ������R���g���[���̃N���X���X�g
-    VScroolList =  MdiClient            ;MDI�e (MS-Access�Ȃ�)
+    ;互換モードで動かすコントロールのクラスリスト
+    VScroolList =  MdiClient            ;MDI親 (MS-Accessなど)
                   ,VbaWindow            ;VisualBasicEditor
-                  ,_WwB                 ;MS-Word(�ҏW�̈�S��)
-                  ,Excel7               ;MS-Excel
+                  ,_WwB                 ;MS-Word(編集領域全体)
+;                  ,Excel7               ;MS-Excel
 ;;;;;                  ,OModule                ;MS-Access97   2008.05.20
 
-    ;MDI���O�A�N�e�B�u�����X�g (��è�ގq����޳�̂��ް��������؂Ȃ�)
+	;事前アクティブ化リスト 2012.08.13
+    ActivateList = TscShellContainerClass  ;リモートデスクトップ WinClass
+
+    ;MDI事前アクティブ化リスト (ｱｸﾃｨﾌﾞ子ｳｨﾝﾄﾞｳのみﾊﾞｰがあるｱﾌﾟﾘなど)
     MdiActivateList = Excel7            ;MS-Excel
 
-    ;--- �݊����[�h �J�X�^������ ---
-    ;�������X�g(�o�C�p�X���Đe�R���g���[���𐧌䂷��)
-    BypassCtlList =   ScrollBar         ;�X�N���[���o�[�{��
-                    , _WwG              ;MS-Word�����y�C��(����_WwB�Ő���)
-                    , Static            ;�G��v8�� �b��  2009.07.22
+    ;--- 互換モード カスタム動作 ---
+    ;無視リスト(バイパスして親コントロールを制御する)
+    BypassCtlList =   ScrollBar         ;スクロールバー本体
+                    , _WwG              ;MS-Word分割ペイン(一つ上の_WwBで制御)
+                    , Static            ;秀丸v8β 暫定  2009.07.22
 
-    ;�Z��X�N���[���o�[ : ��۰��ް���z���ł͂Ȃ�����ɂ������
-    BrotherScroolBarList = TkfInnerView.UnicodeClass    ;�G�f�B�^
+    ;兄弟スクロールバー : ｽｸﾛｰﾙﾊﾞｰが配下ではなく同列にあるｱﾌﾟﾘ
+    BrotherScroolBarList = TkfInnerView.UnicodeClass    ;萌ディタ
 
-    ;�֎~���X�g�F��۰�����ق����Ȃ����́A�݊����[�h���g�p���Ȃ�
-    NullShwndTabooList = Excel7         ;MS-Excel(�N���b�V���΍�)
+    ;禁止リスト：ｽｸﾛｰﾙﾊﾝﾄﾞﾙが取れない時は、互換モードを使用しない
+    NullShwndTabooList = Excel7         ;MS-Excel(クラッシュ対策)
 
 
-    ;---- ���X�N���[�� �J�X�^������ ---
-    ;���X�N���[�����O���X�g
-    HDisavledList = 
+    ;---- 横スクロール カスタム動作 ---
+    ;横スクロール除外リスト
+    HDisavledList = TLimitedScrollBox  ;Leeyesのビューア部 
 
 return
 
 ;==============================================
 ;     Hotkeys
 ;==============================================
-WheelDown::     WheelRedirect()
-WheelUp::       WheelRedirect()
+*WheelDown::     WheelRedirect()
+*WheelUp::       WheelRedirect()
 
 
-;Shift�z�C�[���ŉ��X�N���[��
+;Shiftホイールで横スクロール
 +WheelDown::    WheelRedirect(1)
 +WheelUp::      WheelRedirect(1)
 
-/* ���������� Logicool�}�E�X�p �ݒ�T���v�� ����������������������������
+/* ※※※※※ Logicoolマウス用 設定サンプル ※※※※※※※※※※※※※※
 
-;Logicool�}�E�X�`���g1(uberOptions�� ��:F13 �E:F14�����蓖�Ă��Ă���Ɖ���)
-; �����������������͐��������Ȃ��̂�user.xml���蓮�ɂĕҏW��
-; �L�[���s�[�g�𔭐�������K�v����
+;Logicoolマウスチルト1(uberOptionsで 左:F13 右:F14が割り当てられていると仮定)
+; ただし押下解除情報は正しく取れないのでuser.xmlを手動にて編集し
+; キーリピートを発生させる必要あり
 F13::   WheelRedirect(1,0)
 F14::   WheelRedirect(1,1)
 
-;Logicool�}�E�X�`���g2(SetPoint�� ��:F11 �E:F12�Ɋ��蓖�Ă��Ă���Ɖ���)
+;Logicoolマウスチルト2(SetPointで 左:F11 右:F12に割り当てられていると仮定)
 F11::       SetTimer,TiltRepeatL,80
 F11 up::    SetTimer,TiltRepeatL,OFF
 F12::       SetTimer,TiltRepeatR,80
@@ -122,7 +132,7 @@ return
 TiltRepeatR:
     WheelRedirect(1,1)
 return
-;������������������������������������������������������������������������
+;※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
 */
 
 ;
@@ -132,14 +142,15 @@ return
 ;==============================================
 WheelRedirect(mode=0,dir="")
 ;-------------------------------------------------------------
-;   �z�C�[�����_�C���N�g
-;   mode 0:�c�X�N���[��  1:���X�N���[�� (�ȗ���:�c)
-;   dir  0:UP(LEFT)      1:DOWN(RIGHT)  (�ȗ���:�z�C�[������)
+;   ホイールリダイレクト
+;   mode 0:縦スクロール  1:横スクロール (省略時:縦)
+;   dir  0:UP(LEFT)      1:DOWN(RIGHT)  (省略時:ホイール準拠)
 ;-------------------------------------------------------------
 {
     global  DefaultScrollMode, AcclSpeed, AcclTOut, ScrlCount
            ,MouseWhellList, VScroolList, MdiActivateList
            ,BypassCtlList, NullShwndTabooList, HDisavledList
+           ,ActivateList
 
     CoordMode,Mouse,Screen
     MouseGetPos,mx,my,hwnd,ctrl,3
@@ -149,37 +160,68 @@ WheelRedirect(mode=0,dir="")
         MouseGetPos,,,,ctrl,2
     ifEqual,ctrl,,  SetEnv,ctrl,%hwnd%              ;2008.05.25
     WinGetClass,ccls,ahk_id %ctrl%
-    mccls := ccls                                   ;2009.07.22    �G��v8�� �Ή�
+    mccls := ccls                                   ;2009.07.22    秀丸v8β 対応
 
-    ;�������X�g�`�F�b�N�F1�K�w��̃R���g���[���𐧌�ΏۂƂ���
+
+	;---- アプリ個別処理 ----
+	;※仮想PC、他PCリモート制御に関しては通常のウィンドウと扱いが違うため
+	;  個別対処が必要かも
+;	CoordMode,ToolTip,Screen
+;	tooltip,%wcls%,50,50
+
+	;Mouse without Borders 2012.08.13
+	;スクロール制御はクライアントに任せる (Class名は環境で変動するかも)
+	if  (Instr(wcls,"WindowsForms10.Window.8.app.0.33c0d9d") && mx==0 && my==0) {
+		Send,{%A_ThisHotkey%}
+		return
+	}
+
+	;docuworksズーム 2011.20.34 (暫定)
+	if Instr(wcls,"Afx:400000:b:10013:"){
+	    if (Instr(A_ThisHotkey,"Up"))
+	        ControlSend,AfxFrameOrView422,{NumpadAdd},DocuWorks
+	    else
+	        ControlSend,AfxFrameOrView422,{NumpadSub},DocuWorks
+	    return
+	}
+
+	;---- カスタマイズ適用 -----
+	;事前アクティブ化リストチェック : 非ｱｸﾃｨﾌﾞｳｨﾝﾄﾞｳをｱｸﾃｨﾌﾞ化 2012.08.13
+    if wcls in %ActivateList%
+    {
+		WinActivate ,ahk_class %wcls%
+	}
+
+    ;無視リストチェック：1階層上のコントロールを制御対象とする
+    Ptr := !A_PtrSize ? "UInt" : "Ptr"
     ifInString, BypassCtlList, %ccls%
     {
-        ctrl := DllCall("GetParent",UInt,ctrl, UInt)
+        ctrl := DllCall("GetParent",Ptr,ctrl, Ptr)	;U64 2012.11.09
         WinGetClass,ccls,ahk_id %ctrl%
     }
 
-    ;MDI���O�A�N�e�B�u�����X�g�`�F�b�N : ��è�ގq����޳��è�މ�
+    ;MDI事前アクティブ化リストチェック : 非ｱｸﾃｨﾌﾞ子ｳｨﾝﾄﾞｳをｱｸﾃｨﾌﾞ化
     if ccls in %MdiActivateList%
     {
-        MdiClient := DllCall("GetParent",UInt,ctrl, UInt)
+        MdiClient := DllCall("GetParent",Ptr,ctrl, Ptr) ;U64 2012.11.09
         SendMessage, 0x229, 0,0,,ahk_id %MdiClient% ;WM_MDIGETACTIVE
         if (ctrl != ErrorLevel) {
-            if(ccls = "Excel7")                    ;Excel�J�X�^��
-			        ControlClick,,ahk_id %ctrl%     ; (��)MID�������N���b�N���đO�ʂɂȂ�Ȃ��悤�ɂ��� 2009.07.22
+            if(ccls = "Excel7")                    ;Excelカスタム
+			        ControlClick,,ahk_id %ctrl%     ; (改)MID小窓をクリックして前面にならないようにした 2009.07.22
             Else    PostMessage,0x222, %ctrl%,0,,ahk_id %MdiClient%
         }
     }
-    scnt := GetScrollBarHwnd(shwnd,mx,my,ctrl,mode,mccls) ;��۰�����َ擾 2009.07.22
+    scnt := GetScrollBarHwnd(shwnd,mx,my,ctrl,mode,mccls) ;ｽｸﾛｰﾙﾊﾝﾄﾞﾙ取得 2009.07.22
 
-    ;�X�N���[������w��
+    ;スクロール動作指定
     scmode := DefaultScrollMode<<1 | mode
-    if ccls in %HDisavledList%          ;���X�N���[���֎~
+    if ccls in %HDisavledList%          ;横スクロール禁止
         scmode &= 0x10
-    if ccls in %MouseWhellList%         ;�z�C�[�����[�h
+    if ccls in %MouseWhellList%         ;ホイールモード
         scmode &= 0x01
-    if ccls in %VScroolList%            ;�݊����[�h
+    if ccls in %VScroolList%            ;互換モード
         scmode |= 0x10
-    if (!shwnd) {                       ;�݊����[�h�֎~���X�g
+    if (!shwnd) {                       ;互換モード禁止リスト
         if ccls in %NullShwndTabooList%
             scmode  = 0
     }
@@ -191,13 +233,13 @@ WheelRedirect(mode=0,dir="")
 
 GetScrollBarHwnd(byref shwnd, mx,my,Cntlhwnd,mode=0,mccls="")
 ;----------------------------------------------------------------------------
-; �Y���R���g���[���̃X�N���[���n���h����Ԃ�
-;   �߂�l �w������̃X�N���[���I�u�W�F�N�g��
-;   out    shwnd       �X�N���[���n���h���i�[��
-;   in     mx,my       �}�E�X�ʒu
-;          Cntlhwnd    �ΏۃR���g���[���̃n���h��
-;          mode        0:VSCROLL(�c) 1:HSCROLL(��)
-;          mccls       �}�E�X�����̃R���g���[������
+; 該当コントロールのスクロールハンドルを返す
+;   戻り値 指定方向のスクロールオブジェクト数
+;   out    shwnd       スクロールハンドル格納先
+;   in     mx,my       マウス位置
+;          Cntlhwnd    対象コントロールのハンドル
+;          mode        0:VSCROLL(縦) 1:HSCROLL(横)
+;          mccls       マウス直下のコントロール名称
 ;----------------------------------------------------------------------------
 {
     global BrotherScroolBarList
@@ -206,19 +248,20 @@ GetScrollBarHwnd(byref shwnd, mx,my,Cntlhwnd,mode=0,mccls="")
     WinGet,lst,ControlList,ahk_id %Cntlhwnd%
     WinGetClass,pcls, ahk_id %Cntlhwnd%
 
-    ;�z���ɃX�N���[���o�[�Ȃ�
+    ;配下にスクロールバーなし
+    Ptr := !A_PtrSize ? "UInt" : "Ptr"
     ifNotInString, lst, ScrollBar
-    {    ;�Z��w�肪����ꍇ�́A�����Ɠ���̃X�N���[���o�[��T��
+    {    ;兄弟指定がある場合は、自分と同列のスクロールバーを探す
         if pcls in %BrotherScroolBarList%
         {
-            Cntlhwnd := DllCall("GetParent",UInt,Cntlhwnd, UInt)
+            Cntlhwnd := DllCall("GetParent",Ptr,Cntlhwnd, Ptr)
             WinGet,lst,ControlList,ahk_id %Cntlhwnd%
             WinGetClass,pcls, ahk_id %Cntlhwnd%
         }
         else return 0
     }
 
-    ;�X�N���[���o�[�R���g���[���̒��o
+    ;スクロールバーコントロールの抽出
     vcnt = 0
     hcnt = 0
     Loop,Parse,lst,`n
@@ -228,12 +271,12 @@ GetScrollBarHwnd(byref shwnd, mx,my,Cntlhwnd,mode=0,mccls="")
         ControlGet,hwnd, Hwnd,,%A_LoopField%,ahk_id %Cntlhwnd%
         WinGetpos, sx,sy,sw,sh, ahk_id %hwnd%
 
-        if (sw < sh)    {   ;�c�X�N���[��
+        if (sw < sh)    {   ;縦スクロール
             vcnt++
             WinGetpos, vx%vcnt%,vy%vcnt%,vw%vcnt%,vh%vcnt%, ahk_id %hwnd%
             if (vi = "")
-            || ((vy%vi%!=sy)&&((sy<my)&&(vy%vi%<sy))||((vy%vi%>my)&&(vy%vi%>sy))) ;�㉺����
-            || ((vx%vi%!=sx)&&((sx>mx)&&(vx%vi%>sx))||((vx%vi%<mx)&&(vx%vi%<sx))) ;���E����
+            || ((vy%vi%!=sy)&&((sy<my)&&(vy%vi%<sy))||((vy%vi%>my)&&(vy%vi%>sy))) ;上下分割
+            || ((vx%vi%!=sx)&&((sx>mx)&&(vx%vi%>sx))||((vx%vi%<mx)&&(vx%vi%<sx))) ;左右分割
             {
                 vi := vcnt
                 if (mode = 0)   {
@@ -242,12 +285,12 @@ GetScrollBarHwnd(byref shwnd, mx,my,Cntlhwnd,mode=0,mccls="")
                 }
             }
         }
-        if (sw > sh)    {   ;���X�N���[��
+        if (sw > sh)    {   ;横スクロール
             hcnt++
             WinGetpos, hx%hcnt%,hy%hcnt%,hw%hcnt%,hh%hcnt%, ahk_id %hwnd%
             if (hi = "")
-            || ((hx%hi%!=sx)&&((sx<mx)&&(hx%hi%<sx))||((hx%hi%>mx)&&(hx%hi%>sx)))           ;���E(Excel�^)
-            || ((hy%hi%!=sy)&&((sy+sh>my)&&(hy%hi%>sy))||((hy%hi%+hh%hi%<my)&&(hy%hi%<sy))) ;�㉺(Word�^)
+            || ((hx%hi%!=sx)&&((sx<mx)&&(hx%hi%<sx))||((hx%hi%>mx)&&(hx%hi%>sx)))           ;左右(Excel型)
+            || ((hy%hi%!=sy)&&((sy+sh>my)&&(hy%hi%>sy))||((hy%hi%+hh%hi%<my)&&(hy%hi%<sy))) ;上下(Word型)
             {
                 hi := hcnt
                 if (mode = 1)   {
@@ -258,11 +301,11 @@ GetScrollBarHwnd(byref shwnd, mx,my,Cntlhwnd,mode=0,mccls="")
         }
     }
 
-    ; 2009.07.22 �G��8��1 ���b��Ή�
-    ;---�A�N�e�B�u�y�C���ɂ����o�[���Ȃ��A�v���A�\�Ȃ�y�C����؂�ւ���---
-    ;[�G��]�p �J�X�^���F�����E�B���h�E�؂�ւ� 
-    if  (pcls="HM32CLIENT" && !(vy1<=my && vy1+vh1 >= my))  ;�G�� v7����
-     || (pcls="Hidemaru32Class" && mccls = "Static")         ;     v8��1
+    ; 2009.07.22 秀丸8β1 超暫定対応
+    ;---アクティブペインにしかバーがないアプリ、可能ならペインを切り替える---
+    ;[秀丸]用 カスタム：分割ウィンドウ切り替え 
+    if  (pcls="HM32CLIENT" && !(vy1<=my && vy1+vh1 >= my))  ;秀丸 v7未満
+     || (pcls="Hidemaru32Class" && mccls = "Static")         ;     v8β1
         PostMessage, 0x111, 142,  0, ,ahk_id %Cntlhwnd%   ;WM_COMMAND
     ;------------------------------------------------------------------------
 
@@ -273,32 +316,33 @@ GetScrollBarHwnd(byref shwnd, mx,my,Cntlhwnd,mode=0,mccls="")
 
 MOUSEWHELL(hwnd,mx,my,dir="", ASpeed=1,ATOut=300)
 ;----------------------------------------------------------------------------
-; WM_MOUSEWHELL�ɂ��C�ӃR���g���[���X�N���[��
-;       hwnd        �Y���R���g���[���̃E�B���h�E�n���h��
-;       mx,my       �}�E�X�ʒu
-;       dir         �O����� 0:UP 1:DOWN
+; WM_MOUSEWHELLによる任意コントロールスクロール
+;       hwnd        該当コントロールのウィンドウハンドル
+;       mx,my       マウス位置
+;       dir         前後方向 0:UP 1:DOWN
 ;
-;       ASpeed       :�������̔{��(0�ŉ���OFF)
-;       ATOut        :�����^�C���A�E�g�l(ms)
+;       ASpeed       :加速時の倍率(0で加速OFF)
+;       ATOut        :加速タイムアウト値(ms)
 ;----------------------------------------------------------------------------
 {
-    ; IKKI���� WheelAccel.ahk���ꍞ�� ���b��Ή�     2009.07.22
+    static delta  ; 2012.08.12 L向け調整
+
+    ; IKKI氏の WheelAccel.ahk入れ込み 超暫定対応     2009.07.22
     global  AcclMode
     if (AcclMode)  {
         delta := 120 * WA_Throttle()
     }
     else {
-        static delta
 
-        ;�z�C�[������
+        ;ホイール加速
         If (A_PriorHotkey <> A_ThisHotkey) || (ATOut < A_TimeSincePriorHotkey) 
            || (0 >= ASpeed)
             delta = 120
         Else If (delta < 1000)
             delta += 120 * ASpeed
-    }
+   }
 
-    ; wParam: Delta(�ړ���)
+    ; wParam: Delta(移動量)
     wpalam  :=GetKeyState("LButton")     | GetKeyState("RButton") <<1 
             | GetKeyState("Shift")   <<2 | GetKeyState("Ctrl")    <<3 
             | GetKeyState("MButton") <<4 | GetKeyState("XButton1")<<5
@@ -312,8 +356,8 @@ MOUSEWHELL(hwnd,mx,my,dir="", ASpeed=1,ATOut=300)
          wpalam |=   delta << 16        ;up
     Else wpalam |= -(delta << 16)       ;down
 
-    ; lParam: XY���W
-    my += (my < 0) ? 0xFFFF : 0  ;�}���`�f�B�X�v���C�΍� 2009.06.12
+    ; lParam: XY座標
+    my += (my < 0) ? 0xFFFF : 0  ;マルチディスプレイ対策 2009.06.12
     mx += (mx < 0) ? 0xFFFF : 0
     lpalam := (my << 16) | mx
 
@@ -323,27 +367,27 @@ MOUSEWHELL(hwnd,mx,my,dir="", ASpeed=1,ATOut=300)
 
 SCROLL(hwnd,mode=0,shwnd=0,dir="", ScrlCnt=1,ASpeed=1,ATOut=300)
 ;----------------------------------------------------------
-; WM_SCROLL�ɂ��C�ӃR���g���[���X�N���[��
-;       hwnd        �Y���R���g���[���̃E�B���h�E�n���h��
-;       mode        0:VSCROLL(�c) 1:HSCROLL(��)
-;       shwnd       �X�N���[���o�[�̃n���h��
-;       dir         �O����� 0:SB_LINEUP/LEFT 1:SB_LINEDOWN/RIGHT
+; WM_SCROLLによる任意コントロールスクロール
+;       hwnd        該当コントロールのウィンドウハンドル
+;       mode        0:VSCROLL(縦) 1:HSCROLL(横)
+;       shwnd       スクロールバーのハンドル
+;       dir         前後方向 0:SB_LINEUP/LEFT 1:SB_LINEDOWN/RIGHT
 ;
-;       ScrlCnt      :�X�N���[���s��
-;       ASpeed       :�������̔{��(0�ŉ���OFF)
-;       ATOut        :�����^�C���A�E�g�l(ms)
+;       ScrlCnt      :スクロール行数
+;       ASpeed       :加速時の倍率(0で加速OFF)
+;       ATOut        :加速タイムアウト値(ms)
 ;----------------------------------------------------------
 {
     static ACount
 
-    ;����
+    ;加速
     If (A_PriorHotkey <> A_ThisHotkey) || (ATOut < A_TimeSincePriorHotkey) 
        || (0 >= ASpeed)
         ACount := ScrlCnt
     Else
         ACount += ScrlCnt * ASpeed
 
-    ;wParam: ����
+    ;wParam: 方向
     if (dir = "")
     {
         ifInstring A_ThisHotkey, WheelUp
@@ -361,12 +405,12 @@ SCROLL(hwnd,mode=0,shwnd=0,dir="", ScrlCnt=1,ASpeed=1,ATOut=300)
 
 WA_Throttle() {
 ;----------------------------------------------------------
-; ����������`��ԂŌv�Z����
-; 	minThrottle   = �ŏ�������
-; 	maxThrottle   = �ő������
-; 	minWheelSpeed = �ŏ��������ɂȂ�z�C�[����]���x (�m�b�`/�b)
-; 	maxWheelSpeed = �ő�������ɂȂ�z�C�[����]���x (�m�b�`/�b)
-; 	WA_Debug      = �f�o�b�O���[�h
+; 加速率を線形補間で計算する
+; 	minThrottle   = 最小加速率
+; 	maxThrottle   = 最大加速率
+; 	minWheelSpeed = 最小加速率になるホイール回転速度 (ノッチ/秒)
+; 	maxWheelSpeed = 最大加速率になるホイール回転速度 (ノッチ/秒)
+; 	WA_Debug      = デバッグモード
 ;----------------------------------------------------------
 	global minThrottle, maxThrottle, minWheelSpeed, maxWheelSpeed, WA_Debug, tooltiptext
 	static prevspd := 0
@@ -375,9 +419,9 @@ WA_Throttle() {
 		prevspd := 0
 		nextspd := 0
 	} else {
-		nextspd := 1000 / A_TimeSincePriorHotkey ; ���݂̃z�C�[����]���x (�m�b�`/�b)
+		nextspd := 1000 / A_TimeSincePriorHotkey ; 現在のホイール回転速度 (ノッチ/秒)
 	}
-	spd := (prevspd + nextspd) / 2 ; ���� 2 �m�b�`�̕��ω�]���x (�m�b�`/�b)
+	spd := (prevspd + nextspd) / 2 ; 直近 2 ノッチの平均回転速度 (ノッチ/秒)
 	if (spd < minWheelSpeed) {
 		thr := 1
 	} else {
@@ -400,7 +444,7 @@ WA_Throttle() {
 
 WA_EraseToolTip:
 ;----------------------------------------------------------
-; �c�[���`�b�v������
+; ツールチップを消す
 ;----------------------------------------------------------
 	tooltiptext := ""
 	tooltip
@@ -408,21 +452,21 @@ WA_EraseToolTip:
 	return
 
 ;----------------------------------------------------------
-; <�Q�l> �z�C�[�������̕ʎ���
+; <参考> ホイール加速の別実装
 ; http://f57.aaa.livedoor.jp/~atechs/index.php?plugin=attach&pcmd=open&file=AutoHotKey%20Thread.htm&refer=Download
-; 538 �F233�F2005/05/09(��) 01:41:23 ID:zU71pxGA
+; 538 ：233：2005/05/09(月) 01:41:23 ID:zU71pxGA
 ;     WheelUp::
 ;     WheelDown::
-;     �@MouseGetPos,x,y,hwnd,cls
-;     �@MouseGetPos,,,,cls2,1
-;     �@if(cls != cls2)
-;     �@�@cls := cls2
-;     �@accel := (A_PriorHotkey == A_ThisHotkey && A_TimeSincePriorHotkey < 80) + (A_PriorHotkey == A_ThisHotkey && A_TimeSincePriorHotkey < 250) + 1
-;     �@wParam := 0x780000 * accel * (1 - 2 *(A_ThisHotkey = "WheelDown"))
-;     �@lParam := x + y*0x10000
-;     �@PostMessage,0x20A, %wParam%,%lParam%, %cls%, ahk_id %hwnd%
-;     �@return
-;     �z�C�[�����_�C���N�g�B��ɂ���ĉ����t���B
-;     �����ԒZ���Ȃ����B���̂Ƃ���MDI���܂ߖw�Ǔ��悤�ɂȂ����B
+;     　MouseGetPos,x,y,hwnd,cls
+;     　MouseGetPos,,,,cls2,1
+;     　if(cls != cls2)
+;     　　cls := cls2
+;     　accel := (A_PriorHotkey == A_ThisHotkey && A_TimeSincePriorHotkey < 80) + (A_PriorHotkey == A_ThisHotkey && A_TimeSincePriorHotkey < 250) + 1
+;     　wParam := 0x780000 * accel * (1 - 2 *(A_ThisHotkey = "WheelDown"))
+;     　lParam := x + y*0x10000
+;     　PostMessage,0x20A, %wParam%,%lParam%, %cls%, ahk_id %hwnd%
+;     　return
+;     ホイールリダイレクト。例によって加速付き。
+;     だいぶ短くなった。今のところMDIを含め殆ど動ようになった。
 ;     W2kSP4, AHK1.0.32.00
 ;----------------------------------------------------------

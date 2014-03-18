@@ -1,104 +1,92 @@
-Redirect Scrool Function  ƒXƒNƒ[ƒ‹§Œä (WheelScroll.ahk)
-    ’P‘Ì/‘gž‚Ý—¼‘Î‰ž (í’“ê—p)
-     2008/05/25 (AutoHotkey 1.0.47.06)  by eamat
-     2008/07/22 Žb’èXV
+Redirect Scrool Function  ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«åˆ¶å¾¡ (WheelScroll.ahk)
+    å˜ä½“/çµ„è¾¼ã¿ä¸¡å¯¾å¿œ (å¸¸é§å°‚ç”¨)
 
-.¡“®ìŠÂ‹«
-    AutoHotkey
-    ƒ}ƒEƒXƒtƒbƒN‚ÌŽg—p‚Å‚«‚éŠÂ‹«(WindowsNT/2000/XP)
-    “®ìŠm”FŠÂ‹«: XPSP2AMS-Office 2000/2002
+.â– å‹•ä½œç’°å¢ƒ
+    AutoHotkey(_L)   ãƒžã‚¦ã‚¹ãƒ•ãƒƒã‚¯ã®ä½¿ç”¨ã§ãã‚‹ç’°å¢ƒ
+    å‹•ä½œç¢ºèªç’°å¢ƒ: XPã€7ã€8ã€8.1
+    â€»é«˜è§£åƒåº¦ãƒ‡ã‚£ã‚¹ãƒ—ãƒ¬ã‚¤ã®dpiæ‹¡å¤§è¡¨ç¤ºã«ã¯å¯¾å¿œã—ã¦ã¾ã›ã‚“
 
-.¡ŠT—v
-    ƒzƒC[ƒ‹ƒŠƒ_ƒCƒŒƒNƒgB”ñƒAƒNƒeƒBƒuƒEƒBƒ“ƒhƒE‚ðƒzƒC[ƒ‹‰Â”\‚É‚µ‚Ü‚·B‚ ‚Æ‰Á‘¬‚Æ‚©B
-    ’Êí‚ÌƒzƒC[ƒ‹‚ÅƒXƒNƒ[ƒ‹‚Å‚«‚È‚¢ƒEƒBƒ“ƒhƒEAƒRƒ“ƒgƒ[ƒ‹‚ðŒÝŠ·ƒXƒNƒ[ƒ‹ƒ‚[ƒh‚Å
-    c‰¡ƒXƒNƒ[ƒ‹‰Â”\
-    Logicoolƒ}ƒEƒX‚Ìƒ`ƒ‹ƒg‚Å‰¡ƒXƒNƒ[ƒ‹‚Å‚«‚é‚©‚à
+.â– æ¦‚è¦
+    ãƒ›ã‚¤ãƒ¼ãƒ«ãƒªãƒ€ã‚¤ãƒ¬ã‚¯ãƒˆã€‚éžã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’ãƒ›ã‚¤ãƒ¼ãƒ«å¯èƒ½ã«ã—ã¾ã™ã€‚ã‚ã¨åŠ é€Ÿã¨ã‹ã€‚
+    é€šå¸¸ã®ãƒ›ã‚¤ãƒ¼ãƒ«ã§ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã§ããªã„ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã€ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«ã‚’äº’æ›ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ãƒ¢ãƒ¼ãƒ‰ã§
+    ç¸¦æ¨ªã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«å¯èƒ½
 
-.¡“Á’¥
-   EƒXƒNƒ[ƒ‹ƒo[‚Ìƒnƒ“ƒhƒ‹‚ðŽæ“¾‚µ‚ÄŽw’èiŒÝŠ·ƒXƒNƒ[ƒ‹Žžj
-     ¨ •ªŠ„ƒEƒBƒ“ƒhƒE—Ìˆæ (MS-Word Excel)
-     ¨ ƒzƒC[ƒ‹‚Å“®‚©‚È‚¢ƒAƒvƒŠ VisualBasicEditor‚È‚Ç‚ÌƒXƒNƒ[ƒ‹‚ª‰Â”\‚ÉB
-   EƒXƒNƒ[ƒ‹ƒo[‚ÌŒŸ’m•û–@‚ÍWheel Redirector‚Á‚Û‚¢Ý’è‚ÅŽw’èiŒÝŠ·ƒXƒNƒ[ƒ‹Žžj
-   E‚Â‚¢‚Å‚ÉGŠÛ‚Ì•ªŠ„ƒEƒBƒ“ƒhƒE‚Å‚àƒŠƒ_ƒCƒŒƒNƒg‰Â”\‚É
+.â– ç‰¹å¾´
+   ãƒ»ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ãƒãƒ¼ã®ãƒãƒ³ãƒ‰ãƒ«ã‚’å–å¾—ã—ã¦æŒ‡å®šï¼ˆäº’æ›ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«æ™‚ï¼‰
+     â†’ åˆ†å‰²ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦é ˜åŸŸ (MS-Word Excel)
+     â†’ ãƒ›ã‚¤ãƒ¼ãƒ«ã§å‹•ã‹ãªã„ã‚¢ãƒ—ãƒª VisualBasicEditorãªã©ã®ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ãŒå¯èƒ½ã«ã€‚
+   ãƒ»ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ãƒãƒ¼ã®æ¤œçŸ¥æ–¹æ³•ã¯Wheel Redirectorã£ã½ã„è¨­å®šã§æŒ‡å®šï¼ˆäº’æ›ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«æ™‚ï¼‰
+   ãƒ»ã¤ã„ã§ã«ç§€ä¸¸ã®åˆ†å‰²ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã§ã‚‚ãƒªãƒ€ã‚¤ãƒ¬ã‚¯ãƒˆå¯èƒ½ã«
 
-.¡Žg—p•û–@
+.â– ä½¿ç”¨æ–¹æ³•
 
-..Ÿ’P‘Ì‹N“®
-   ƒXƒNƒŠƒvƒg‚ð‚»‚Ì‚Ü‚ÜŽÀs
+..â—†å˜ä½“èµ·å‹•
+   ã‚¹ã‚¯ãƒªãƒ—ãƒˆã‚’ãã®ã¾ã¾å®Ÿè¡Œ
 
-..Ÿ‘gž‚Ý
-   AutoHotkey.ini‚È‚Ç‚É‘gž‚ñ‚ÅŽg‚¤ê‡AAutoExecute ƒZƒNƒVƒ‡ƒ“‚É
+..â—†çµ„è¾¼ã¿
+   AutoHotkey.iniãªã©ã«çµ„è¾¼ã‚“ã§ä½¿ã†å ´åˆã€AutoExecute ã‚»ã‚¯ã‚·ãƒ§ãƒ³ã«
 
      #Include WheelScroll.ahk
      Gosub,WheelInit
 
-   ‚ð“ü‚ê‚éB
+   ã‚’å…¥ã‚Œã‚‹ã€‚
 
-.¡Ý’èŠÖŒW
-..‰Šú‰»ƒ‹[ƒ`ƒ“ WheelInit‚ð“K“–‚ÉƒJƒXƒ^ƒ}ƒCƒY‚µ‚ÄŽg—p‚µ‚Ä‰º‚³‚¢B
-   ƒzƒC[ƒ‹ƒ‚[ƒhFƒzƒC[ƒ‹‘€ìŽžAƒzƒC[ƒ‹ƒRƒ}ƒ“ƒh‚ð“Š‚°‚éB
-   ŒÝŠ·ƒ‚[ƒhFƒzƒC[ƒ‹‘€ìŽžAƒXƒNƒ[ƒ‹ƒRƒ}ƒ“ƒh‚ð“Š‚°‚éBƒzƒC[ƒ‹–¢‘Î‰žƒRƒ“ƒgƒ[ƒ‹‚È‚Ç‚Å—LŒø
-   ŒÝŠ·ƒ‚[ƒh ƒJƒXƒ^ƒ€“®ìF
-      ƒXƒNƒ[ƒ‹ƒo[ƒIƒuƒWƒFƒNƒg‚ÍƒXƒNƒ[ƒ‹‘ÎÛƒRƒ“ƒgƒ[ƒ‹‚É“à•ï‚³‚ê‚Ä‚¢‚é‚à‚Ì‚ªˆê”Ê“I‚Å‚·‚ª
-      ‹H‚É•À—ñ‚¾‚Á‚½‚èi–GƒfƒBƒ^jA1ŠK‘wã‚ÌƒRƒ“ƒgƒ[ƒ‹‚ª‘ÎÛ‚¾‚Á‚½‚è‚µ‚Ü‚·iMS-Wordj
-      “®‚©‚È‚¢ƒ\ƒtƒg‚È‚Ç‚Í Winspector‚È‚Ç‚Å’²‚×‚Ä“K“–‚É’Ç‰Á‚µ‚Ä‚Ý‚é‚ÆãŽè‚­‚¢‚­‚©‚à‚µ‚ê‚Ü‚¹‚ñB
+.â– è¨­å®šé–¢ä¿‚
+..åˆæœŸåŒ–ãƒ«ãƒ¼ãƒãƒ³ WheelInitã‚’é©å½“ã«ã‚«ã‚¹ã‚¿ãƒžã‚¤ã‚ºã—ã¦ä½¿ç”¨ã—ã¦ä¸‹ã•ã„ã€‚
+   ãƒ›ã‚¤ãƒ¼ãƒ«ãƒ¢ãƒ¼ãƒ‰ï¼šãƒ›ã‚¤ãƒ¼ãƒ«æ“ä½œæ™‚ã€ãƒ›ã‚¤ãƒ¼ãƒ«ã‚³ãƒžãƒ³ãƒ‰ã‚’æŠ•ã’ã‚‹ã€‚
+   äº’æ›ãƒ¢ãƒ¼ãƒ‰ï¼šãƒ›ã‚¤ãƒ¼ãƒ«æ“ä½œæ™‚ã€ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã‚³ãƒžãƒ³ãƒ‰ã‚’æŠ•ã’ã‚‹ã€‚ãƒ›ã‚¤ãƒ¼ãƒ«æœªå¯¾å¿œã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«ãªã©ã§æœ‰åŠ¹
+   äº’æ›ãƒ¢ãƒ¼ãƒ‰ ã‚«ã‚¹ã‚¿ãƒ å‹•ä½œï¼š
+      ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ãƒãƒ¼ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã¯ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«å¯¾è±¡ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«ã«å†…åŒ…ã•ã‚Œã¦ã„ã‚‹ã‚‚ã®ãŒä¸€èˆ¬çš„ã§ã™ãŒ
+      ç¨€ã«ä¸¦åˆ—ã ã£ãŸã‚Šï¼ˆèŒãƒ‡ã‚£ã‚¿ï¼‰ã€1éšŽå±¤ä¸Šã®ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«ãŒå¯¾è±¡ã ã£ãŸã‚Šã—ã¾ã™ï¼ˆMS-Wordï¼‰
+      å‹•ã‹ãªã„ã‚½ãƒ•ãƒˆãªã©ã¯ Winspectorãªã©ã§èª¿ã¹ã¦é©å½“ã«è¿½åŠ ã—ã¦ã¿ã‚‹ã¨ä¸Šæ‰‹ãã„ãã‹ã‚‚ã—ã‚Œã¾ã›ã‚“ã€‚
 
-..HotkeyiƒfƒtƒHƒ‹ƒgj
-  ƒzƒC[ƒ‹Up/Down‚ÅƒzƒC[ƒ‹ƒŠƒ_ƒCƒŒƒNƒgAShift+ƒzƒC[ƒ‹‚Å‰¡ƒXƒNƒ[ƒ‹
-  (Logicoolƒ}ƒEƒX—p‚Ìƒ`ƒ‹ƒgƒeƒXƒgƒTƒ“ƒvƒ‹AF11`F14 ƒRƒƒ“ƒgŠO‚µ‚ÄŽg‚Á‚Ä‰º‚³‚¢
-  ‚Ü‚½Aƒ}ƒEƒXƒhƒ‰ƒCƒo‘¤‚Å‚àƒL[Ý’è‚ð˜M‚é•K—v‚ ‚èj
+..Hotkeyï¼ˆãƒ‡ãƒ•ã‚©ãƒ«ãƒˆï¼‰
+  ãƒ›ã‚¤ãƒ¼ãƒ«Up/Downã§ãƒ›ã‚¤ãƒ¼ãƒ«ãƒªãƒ€ã‚¤ãƒ¬ã‚¯ãƒˆã€Shift+ãƒ›ã‚¤ãƒ¼ãƒ«ã§æ¨ªã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«
+  (Logicoolãƒžã‚¦ã‚¹ç”¨ã®ãƒãƒ«ãƒˆãƒ†ã‚¹ãƒˆã‚µãƒ³ãƒ—ãƒ«ã€F11ï½žF14 ã‚³ãƒ¡ãƒ³ãƒˆå¤–ã—ã¦ä½¿ã£ã¦ä¸‹ã•ã„
+  ã¾ãŸã€ãƒžã‚¦ã‚¹ãƒ‰ãƒ©ã‚¤ãƒå´ã§ã‚‚ã‚­ãƒ¼è¨­å®šã‚’å¼„ã‚‹å¿…è¦ã‚ã‚Šï¼‰
 
-  “K‹X•ÏX‚µ‚Ä‰º‚³‚¢
+  é©å®œå¤‰æ›´ã—ã¦ä¸‹ã•ã„
 
-.¡§ŒÀŽ–€“™
-    ƒzƒC[ƒ‹ƒXƒNƒ[ƒ‹‚Í‚Å‚«‚é‚¾‚¯ƒAƒNƒeƒBƒuó‘Ô‚ð‘Ö‚¦‚¸i”ñƒAƒNƒeƒBƒuŽž‚Í”ñƒAƒNƒeƒBƒu‚Ì‚Ü‚Üj
-    s‚¤‚æ‚¤‚É‚µ‚Ä‚Ü‚·B
-    ‚ªAExcel‚Ìê‡”ñƒAƒNƒeƒBƒuƒV[ƒg‚ð”ñƒAƒNƒeƒBƒu‚Ì‚Ü‚ÜƒXƒNƒ[ƒ‹‚Í‚Å‚«‚È‚¢‚æ‚¤‚È‚Ì‚ÅA
-    Excel‚Ì‚ÝƒXƒNƒ[ƒ‹‘O‚ÉƒAƒNƒeƒBƒu‰Â‚É‚µ‚Ä‚Ü‚·B
-    (Excel–{‘Ì‚ÌƒEƒBƒ“ƒhƒE‚Í”ñƒAƒNƒeƒBƒu‚Ì‚Ü‚ÜƒXƒNƒ[ƒ‹‚Å‚«‚é‚æ‚¤‚É‚È‚è‚Ü‚µ‚½ 2009.07.22)
-    ¦ Excel‚ÌƒNƒ‰ƒbƒVƒ…‘Îô‚Íˆê’Ê‚èŽ{‚µ‚½‚Â‚à‚è‚Å‚·‚ªA–œ‘S‚Å‚Í‚È‚¢‚©‚à‚µ‚ê‚Ü‚¹‚ñB
-       ‚à‚µ“®ì‚ÉŽxá‚ª‚Å‚é‚æ‚¤‚È‚çŒÝŠ·ƒ‚[ƒh‚Í”ð‚¯‚ÄƒzƒC[ƒ‹ƒ‚[ƒh‚Å“®‚©‚µ‚Ä‰º‚³‚¢B
+.â– åˆ¶é™äº‹é …ç­‰
+    ãƒ›ã‚¤ãƒ¼ãƒ«ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã¯ã§ãã‚‹ã ã‘ã‚¢ã‚¯ãƒ†ã‚£ãƒ–çŠ¶æ…‹ã‚’æ›¿ãˆãšï¼ˆéžã‚¢ã‚¯ãƒ†ã‚£ãƒ–æ™‚ã¯éžã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã®ã¾ã¾ï¼‰
+    è¡Œã†ã‚ˆã†ã«ã—ã¦ã¾ã™ã€‚
+    â€» Excelã¯äº’æ›ãƒ¢ãƒ¼ãƒ‰ã§ã¯ã‚¯ãƒ©ãƒƒã‚·ãƒ¥ã—ã‚„ã™ã„ã‚ˆã†ã§ã™
+       å‹•ä½œã«æ”¯éšœãŒã§ã‚‹ã‚ˆã†ãªã‚‰äº’æ›ãƒ¢ãƒ¼ãƒ‰ã¯é¿ã‘ã¦ãƒ›ã‚¤ãƒ¼ãƒ«ãƒ¢ãƒ¼ãƒ‰ã§å‹•ã‹ã—ã¦ä¸‹ã•ã„ã€‚
 
-   ƒ}ƒEƒXƒ|ƒCƒ“ƒ^‚ªƒXƒNƒ[ƒ‹ƒo[ã‚É‚ ‚éŽž‚Í³‚µ‚­“®ì‚µ‚È‚¢‚©‚à’m‚ê‚Ü‚¹‚ñB
+   ãƒžã‚¦ã‚¹ãƒã‚¤ãƒ³ã‚¿ãŒã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ãƒãƒ¼ä¸Šã«ã‚ã‚‹æ™‚ã¯æ­£ã—ãå‹•ä½œã—ãªã„ã‹ã‚‚çŸ¥ã‚Œã¾ã›ã‚“ã€‚
 
-.¡‰ü•ÏEÄ”z•z
-    ‰ü•ÏEÄ”z•z‚Æ‚à‚É‚²Ž©—R‚É‚Ç‚¤‚¼
-    (ƒXƒNƒŠƒvƒg’†‚ÌAboutƒƒbƒZ[ƒW‚Í“KŽž‘‚«Š·‚¦‚Ä‰º‚³‚¢)
-    NYSL‚Æ‚©‚¢‚¤ƒ‰ƒCƒZƒ“ƒX‚ª‚ ‚é‚ç‚µ‚¢‚Ì‚ÅA‚»‚ê‚Å‚Ð‚Æ‚ÂB
-    http://www.kmonos.net/nysl/
+.â– æ”¹å¤‰ãƒ»å†é…å¸ƒ
+    æ”¹å¤‰ãƒ»å†é…å¸ƒã¨ã‚‚ã«ã”è‡ªç”±ã«ã©ã†ãž
+    (ã‚¹ã‚¯ãƒªãƒ—ãƒˆä¸­ã®Aboutãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã¯é©æ™‚æ›¸ãæ›ãˆã¦ä¸‹ã•ã„)
 
-.¡—š—ð
-    2005.02.10  ‚È‚ñ‚©FX‚â‚ë‚¤‚Æ‚µ‚Ä•¡ŽG‚É‚È‚è‚·‚¬‚ÄÁÜ
+.â– å±¥æ­´
+    2005.02.10  ãªã‚“ã‹è‰²ã€…ã‚„ã‚ã†ã¨ã—ã¦è¤‡é›‘ã«ãªã‚Šã™ãŽã¦æŒ«æŠ˜
 
-    2007.10.12 ‰ß‹Ž‚Éì‚Á‚½ƒTƒuƒ‹[ƒ`ƒ“W‚ÌFunction‰»
-               Ý’è‚Æ‚©‹Ã‚é‚Ì‚ð‚â‚ß‚Ä’Pƒ‰»AInitƒ‹[ƒ`ƒ“‚Å“K“–‚É˜M‚ê‚é‚æ‚¤‚ÉB
-               ‰½‚©‚¢‚Â‚Ì‚Ü‚É‚©AHK‚ÅƒRƒ“ƒgƒ[ƒ‹‚Ìƒnƒ“ƒhƒ‹‚ªŽæ‚ê‚é‚æ‚¤‚É‚È‚Á‚Ä‚½‚Ì‚Å
-               ƒXƒNƒ[ƒ‹‚Ìƒnƒ“ƒhƒ‹‚Æ‚©Žæ“¾‚µ‚Ä‚Ý‚é
+    2007.10.12 éŽåŽ»ã«ä½œã£ãŸã‚µãƒ–ãƒ«ãƒ¼ãƒãƒ³é›†ã®FunctionåŒ–
+               è¨­å®šã¨ã‹å‡ã‚‹ã®ã‚’ã‚„ã‚ã¦å˜ç´”åŒ–ã€Initãƒ«ãƒ¼ãƒãƒ³ã§é©å½“ã«å¼„ã‚Œã‚‹ã‚ˆã†ã«ã€‚
+               ä½•ã‹ã„ã¤ã®ã¾ã«ã‹AHKã§ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«ã®ãƒãƒ³ãƒ‰ãƒ«ãŒå–ã‚Œã‚‹ã‚ˆã†ã«ãªã£ã¦ãŸã®ã§
+               ã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã®ãƒãƒ³ãƒ‰ãƒ«ã¨ã‹å–å¾—ã—ã¦ã¿ã‚‹
 
-    2008.03.03  ƒƒWƒN[ƒ‹‚Ìƒ`ƒ‹ƒgƒ}ƒEƒX‚Å‰¡ƒXƒNƒ[ƒ‹‚³‚¹‚Ä‚Ý‚éƒeƒXƒg(F11`F14)
-                ŽŽ‚µ‚Ä‚ÍŒ©‚½‚ªƒ}ƒEƒXƒhƒ‰ƒCƒo‚ÌÝ’è‚ð‚²‚É‚å‚²‚É‚å‚µ‚È‚¢‚Æ‚ ‚©‚ñ‚Ì‚Å
-                ‚ ‚ñ‚Ü‚èŽÀ—p«‚È‚¢‚©‚àB
+    2008.03.03  ãƒ­ã‚¸ã‚¯ãƒ¼ãƒ«ã®ãƒãƒ«ãƒˆãƒžã‚¦ã‚¹ã§æ¨ªã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«ã•ã›ã¦ã¿ã‚‹ãƒ†ã‚¹ãƒˆ(F11ï½žF14)
+                ã‚ã‚“ã¾ã‚Šå®Ÿç”¨æ€§ãªã„ã‹ã‚‚ã€‚
 
-    2008.05.20 EŒÝŠ·ƒ‚[ƒhƒŠƒXƒg‚É Access97’Ç‰Á (51s–Ú‚ÌƒRƒƒ“ƒgŠO‚µ‚ÄŽg‚Á‚Ä‰º‚³‚¢j
-               EŠî–{“®ìƒ‚[ƒh‚ÌƒfƒtƒHƒ‹ƒg’l‚ð 1:ŒÝŠ·SCROLL ¨ 0:WHELL ‚ÉB
-                (¡Žž‚ÍƒzƒC[ƒ‹‚ÌŒø‚©‚È‚¢ƒAƒvƒŠ‚Ì•û‚ª­‚È‚¢‚¾‚ë‚¤‚Æ‚¢‚¤‚±‚Æ‚Å)
-               EƒRƒƒ“ƒg‚Æ‚©ŠXà–¾‚Ì•Ï‚È‚Æ‚±C³
+    2008.05.20 ãƒ»äº’æ›ãƒ¢ãƒ¼ãƒ‰ãƒªã‚¹ãƒˆã« Access97è¿½åŠ  (51è¡Œç›®ã®ã‚³ãƒ¡ãƒ³ãƒˆå¤–ã—ã¦ä½¿ã£ã¦ä¸‹ã•ã„ï¼‰
+               ãƒ»åŸºæœ¬å‹•ä½œãƒ¢ãƒ¼ãƒ‰ã®ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆå€¤ã‚’ 1:äº’æ›SCROLL â†’ 0:WHELL ã«ã€‚
+                (ä»Šæ™‚ã¯ãƒ›ã‚¤ãƒ¼ãƒ«ã®åŠ¹ã‹ãªã„ã‚¢ãƒ—ãƒªã®æ–¹ãŒå°‘ãªã„ã ã‚ã†ã¨ã„ã†ã“ã¨ã§)
+               ãƒ»ã‚³ãƒ¡ãƒ³ãƒˆã¨ã‹æ‰€ã€…èª¬æ˜Žã®å¤‰ãªã¨ã“ä¿®æ­£
 
-    2008.05.25 EƒRƒ“ƒgƒ[ƒ‹ƒNƒ‰ƒX‚ªŽæ‚ê‚È‚¢Žž‚ÍƒEƒBƒ“ƒhƒEƒNƒ‰ƒX‚ðŽw’è‚·‚é‚æ‚¤‚É‚µ‚½B
-                 (Vieas ƒƒCƒ“ƒEƒBƒ“ƒhƒE—p‘Îô)
+    2008.05.25 ãƒ»ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«ã‚¯ãƒ©ã‚¹ãŒå–ã‚Œãªã„æ™‚ã¯ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¯ãƒ©ã‚¹ã‚’æŒ‡å®šã™ã‚‹ã‚ˆã†ã«ã—ãŸã€‚
+                 (Vieas ãƒ¡ã‚¤ãƒ³ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ç”¨å¯¾ç­–)
 
-    2008.05.25 EƒRƒ“ƒgƒ[ƒ‹ƒNƒ‰ƒX‚ªŽæ‚ê‚È‚¢Žž‚ÍƒEƒBƒ“ƒhƒEƒNƒ‰ƒX‚ðŽw’è‚·‚é‚æ‚¤‚É‚µ‚½B
+    2008.05.25 ãƒ»ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«ã‚¯ãƒ©ã‚¹ãŒå–ã‚Œãªã„æ™‚ã¯ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚¯ãƒ©ã‚¹ã‚’æŒ‡å®šã™ã‚‹ã‚ˆã†ã«ã—ãŸã€‚
 
-    2009.06.12 Eƒ}ƒ‹ƒ`ƒfƒBƒXƒvƒŒƒC‘Îô (Thanks IKKI‚³‚ñ) (”ñŒöŠJ)
+    2009.06.12 ãƒ»ãƒžãƒ«ãƒãƒ‡ã‚£ã‚¹ãƒ—ãƒ¬ã‚¤å¯¾ç­– (Thanks IKKIã•ã‚“) (éžå…¬é–‹)
 
-    2009.07.22 E GŠÛv8ƒÀ1‚Å•ªŠ„ƒEƒBƒ“ƒhƒEØ‚è‘Ö‚¦‚ª‚Å‚«‚È‚­‚È‚Á‚Ä‚½‚Ì‚Å ’´Žb’è‘Î‰ž
-                  (‚Å‚à‘½•ª³Ž®”Å‚ªo‚é‘O‚ÉƒRƒ“ƒgƒ[ƒ‹ƒNƒ‰ƒX–¼•Ï‚í‚è‚»‚¤A¡ "Static"‚¾‚µ)
-               EIKKIŽ(http://www18.big.or.jp/~fujiwara/ikki/)‚Ì WheelAccel.ahk ‚Ì
-                 ‰Á‘¬ƒ‚[ƒh‚ð“ü‚êž‚ÝAƒIƒvƒVƒ‡ƒ“‚Å‘I‘ð‚Å‚«‚é‚æ‚¤‚É‚µ‚½B
-               EExcelƒXƒNƒ[ƒ‹Žž‚ÉƒAƒNƒeƒBƒu‚É‚È‚ç‚È‚¢‚æ‚¤‚É‚µ‚½
-                 (‚Æ‚è‚ ‚¦‚¸TrackWheel‚Ì‹Œƒo[ƒWƒ‡ƒ“‚©‚ç–á‚Á‚Ä‚«‚½)
+    2009.07.22 ãƒ» ç§€ä¸¸v8å¯¾å¿œ
+               ãƒ»IKKIæ°(http://www18.big.or.jp/~fujiwara/ikki/)ã® WheelAccel.ahk ã®
+                 åŠ é€Ÿãƒ¢ãƒ¼ãƒ‰ã‚’å…¥ã‚Œè¾¼ã¿ã€ã‚ªãƒ—ã‚·ãƒ§ãƒ³ã§é¸æŠžã§ãã‚‹ã‚ˆã†ã«ã—ãŸã€‚
+               ãƒ»Excelã‚¹ã‚¯ãƒ­ãƒ¼ãƒ«æ™‚ã«ã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã«ãªã‚‰ãªã„ã‚ˆã†ã«ã—ãŸ
+                 (TrackWheelã®æ—§ãƒãƒ¼ã‚¸ãƒ§ãƒ³ã‹ã‚‰æ‹å€Ÿ)
 
-                 ‚Ç‚ê‚àu‚Æ‚è‚ ‚¦‚¸v“ü‚ê‚½ƒŒƒxƒ‹‚È‚Ì‚Åƒ\[ƒX‚Ì‰Â“Ç«‚Í‚Æ‚Ä‚à‚æ‚ë‚µ‚­‚È‚¢B
-                 ‚Â‚©–{“–‚Í TrackWheel(http://sites.google.com/site/agkh6mze/trackwheel)‚Å
-                 ƒXƒNƒ[ƒ‹ŠÖ˜A‚Ìƒlƒ^‚ð·‚è·‚èXV‚³‚ê‚Ä‚é‚Ì‚ÅAƒlƒ^–á‚Á‚Ä‘S•”ì‚è’¼‚µ‚½‚¢B
-                 (ƒƒCƒ“‹@‚ªThinkPad‚È‚Ì‚ÅAŽ©ì‚Ì WheelScroll‚Í‚Ù‚Æ‚ñ‚ÇŽg‚Á‚Ä‚È‚©‚Á‚½‚è)
+	2012.11.08  U64å¯¾å¿œ Uint â†’ Ptrã«ç½®æ›ã€ã‚¨ãƒ³ã‚³ãƒ¼ãƒ‰ã‚’UTF-8ã«å¤‰æ›´
+			    â€»é«˜è§£åƒåº¦ãƒ‡ã‚£ã‚¹ãƒ—ãƒ¬ã‚¤ã®dpiæ‹¡å¤§è¡¨ç¤ºã«ã¯å¯¾å¿œã—ã¦ã¾ã›ã‚“
