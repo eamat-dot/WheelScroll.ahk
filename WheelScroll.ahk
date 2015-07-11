@@ -1,20 +1,26 @@
-﻿;
-; Redirect Scrool Function  スクロール制御
+﻿;---------------------------------------------------------------------------
+;
+; ホイールリダイレクト スクロール制御
 ;   ・加速対応
 ;   ・Word / Excel / VBE / 秀丸等の分割ペインも互換スクロールで操作可能
 ;
-;   単体 / 組込み両対応  2008/05/25 (AutoHotkey 1.0.47.06)
+;   単体 / 組込み両対応  2008/05/25 (AutoHotkey_L 1.1.14.04)
+;
 ;   組込み時 
 ;     #Include WheelScroll.ahk
 ;     Gosub,WheelInit             ;初期化 :AutoExecuteセクションに記述
 ;---------------------------------------------------------------------------
 ;   2009.06.12  マルチディスプレイ対策 (Thanks IKKIさん)
-;   2009.07.22  秀丸v8β1   超暫定対応
+;   2009.07.22  秀丸v8 対応
 ;               IKKI氏の WheelAccel.ahk の加速モードを入れ込み
-;               Excelスクロール時にアクティブにならないようにした
-;               (とりあえず TrackWheel.ahkの旧バージョンから貰ってきた)
-;   2012.11.08  U64対応 Uint → Ptr
+;               Excelスクロール時の処理をSendからControlSendに変更
+;               (TrackWheelの旧バージョンから拝借)
+;   2012.11.08  U64対応 Uint → Ptr、エンコードをUTF-8に変更
 ;   2014.03.18  コメント修正
+;	2014.12.05  VISTA以降のチルトホイール(従来の互換横スクロールではなく)に対応
+;				チルトホットキー：WheelLeft/Ritht
+;				チルトホイールコマンド : WM_MOUSEHWHEEL
+;	2015.07.11  コメント修正
 
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ;   単体起動用
@@ -52,7 +58,7 @@ WheelInit:
     ; AcclMode = 0 オプション
     AcclSpeed         = 1           ;加速時の倍率(0で加速OFF)
     AcclTOut          = 300         ;加速タイムアウト値(ms)
-    ScrlCount         = 5           ;互換スクロール行数
+    ScrlCount         = 1           ;互換スクロール行数
 
     ; AcclMode = 1 オプション
 	; ホイール加速◆改造版
@@ -68,14 +74,21 @@ WheelInit:
 	WA_Debug         := false       ; true にすると加速率とホイール回転速度が表示される
 
     ;ホイールで動かすコントロールのクラスリスト
-    MouseWhellList =MozillaWindowClass
+    MouseWhellList  =MozillaWindowClass
+    MouseHWhellList =MozillaWindowClass
+;    				,Excel7
+;    				,XLMAIN
 
     ;互換モードで動かすコントロールのクラスリスト
     VScroolList =  MdiClient            ;MDI親 (MS-Accessなど)
                   ,VbaWindow            ;VisualBasicEditor
                   ,_WwB                 ;MS-Word(編集領域全体)
 ;                  ,Excel7               ;MS-Excel
-;;;;;                  ,OModule                ;MS-Access97   2008.05.20
+;;;;;              ,OModule                ;MS-Access97   2008.05.20
+
+    HScroolList =  HM32CLIENT			;秀丸
+    			  ,TLimitedScrollBox	;Leeyesのビューア部 
+
 
 	;事前アクティブ化リスト 2012.08.13
     ActivateList = TscShellContainerClass  ;リモートデスクトップ WinClass
@@ -98,43 +111,23 @@ WheelInit:
 
     ;---- 横スクロール カスタム動作 ---
     ;横スクロール除外リスト
-    HDisavledList = TLimitedScrollBox  ;Leeyesのビューア部 
+    HDisavledList = TLimitedScrollBox       ; Leeyesのビューア部 
+                  , TVTest Video Container  ; 動画画面 (TVTest) 2014.05.01
 
 return
 
 ;==============================================
 ;     Hotkeys
 ;==============================================
-*WheelDown::     WheelRedirect()
-*WheelUp::       WheelRedirect()
-
+#IfWinActive
+*WheelDown::    WheelRedirect()
+*WheelUp::      WheelRedirect()
+*WheelLeft::	WheelRedirect(1)  ; 2014.12.05追加
+*WheelRight::	WheelRedirect(1)  ; 2014.12.05追加
 
 ;Shiftホイールで横スクロール
 +WheelDown::    WheelRedirect(1)
 +WheelUp::      WheelRedirect(1)
-
-/* ※※※※※ Logicoolマウス用 設定サンプル ※※※※※※※※※※※※※※
-
-;Logicoolマウスチルト1(uberOptionsで 左:F13 右:F14が割り当てられていると仮定)
-; ただし押下解除情報は正しく取れないのでuser.xmlを手動にて編集し
-; キーリピートを発生させる必要あり
-F13::   WheelRedirect(1,0)
-F14::   WheelRedirect(1,1)
-
-;Logicoolマウスチルト2(SetPointで 左:F11 右:F12に割り当てられていると仮定)
-F11::       SetTimer,TiltRepeatL,80
-F11 up::    SetTimer,TiltRepeatL,OFF
-F12::       SetTimer,TiltRepeatR,80
-F12 up::    SetTimer,TiltRepeatR,OFF
-TiltRepeatL:
-    WheelRedirect(1,0)
-return
-TiltRepeatR:
-    WheelRedirect(1,1)
-return
-;※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
-*/
-
 ;
 
 ;==============================================
@@ -150,7 +143,7 @@ WheelRedirect(mode=0,dir="")
     global  DefaultScrollMode, AcclSpeed, AcclTOut, ScrlCount
            ,MouseWhellList, VScroolList, MdiActivateList
            ,BypassCtlList, NullShwndTabooList, HDisavledList
-           ,ActivateList
+           ,ActivateList, MouseHWhellList, HScroolList
 
     CoordMode,Mouse,Screen
     MouseGetPos,mx,my,hwnd,ctrl,3
@@ -169,10 +162,12 @@ WheelRedirect(mode=0,dir="")
 ;	CoordMode,ToolTip,Screen
 ;	tooltip,%wcls%,50,50
 
+	key := RegExReplace(A_ThisHotkey, "\*" ,"")
+
 	;Mouse without Borders 2012.08.13
 	;スクロール制御はクライアントに任せる (Class名は環境で変動するかも)
 	if  (Instr(wcls,"WindowsForms10.Window.8.app.0.33c0d9d") && mx==0 && my==0) {
-		Send,{%A_ThisHotkey%}
+		Send,{%key%}
 		return
 	}
 
@@ -214,20 +209,29 @@ WheelRedirect(mode=0,dir="")
     scnt := GetScrollBarHwnd(shwnd,mx,my,ctrl,mode,mccls) ;ｽｸﾛｰﾙﾊﾝﾄﾞﾙ取得 2009.07.22
 
     ;スクロール動作指定
-    scmode := DefaultScrollMode<<1 | mode
+    scmode := DefaultScrollMode<<1  | mode
     if ccls in %HDisavledList%          ;横スクロール禁止
         scmode &= 0x10
     if ccls in %MouseWhellList%         ;ホイールモード
         scmode &= 0x01
     if ccls in %VScroolList%            ;互換モード
         scmode |= 0x10
+
+    ;チルト動作指定 2014.12.05
+    if (mode=1 || RegExMatch(A_ThisHotkey, "Wheel(Left|Right)")) {
+	    if ccls in %MouseHWhellList%        ;ホイールモード(チルト)
+	    	scmode &= 0x10
+	    if ccls in %HScroolList%			;互換モード(横スクロール)
+	    	scmode |= 0x10
+	}
+
     if (!shwnd) {                       ;互換モード禁止リスト
         if ccls in %NullShwndTabooList%
             scmode  = 0
     }
 
     if (!scmode)
-            MOUSEWHELL(ctrl,mx,my,dir,AcclSpeed,AcclTOut)
+            MOUSEWHELL(ctrl,mx,my,mode,dir,AcclSpeed,AcclTOut)
     Else    SCROLL(ctrl,mode,shwnd,dir,ScrlCount,AcclSpeed,AcclTOut)
 }
 
@@ -314,12 +318,13 @@ GetScrollBarHwnd(byref shwnd, mx,my,Cntlhwnd,mode=0,mccls="")
 
 ;------ PostMessage Scrool Control ------------------------------------------
 
-MOUSEWHELL(hwnd,mx,my,dir="", ASpeed=1,ATOut=300)
+MOUSEWHELL(hwnd,mx,my,mode="",dir="", ASpeed=1,ATOut=300)
 ;----------------------------------------------------------------------------
 ; WM_MOUSEWHELLによる任意コントロールスクロール
 ;       hwnd        該当コントロールのウィンドウハンドル
 ;       mx,my       マウス位置
-;       dir         前後方向 0:UP 1:DOWN
+;		mode		0:縦 1:横 (2014.12.05)
+;       dir         進行方向 0:UP(Left) 1:DOWN(Right)
 ;
 ;       ASpeed       :加速時の倍率(0で加速OFF)
 ;       ATOut        :加速タイムアウト値(ms)
@@ -348,21 +353,17 @@ MOUSEWHELL(hwnd,mx,my,dir="", ASpeed=1,ATOut=300)
             | GetKeyState("MButton") <<4 | GetKeyState("XButton1")<<5
             | GetKeyState("XButton2")<<6
 
-    If (dir = 0)
-         wpalam |=   delta << 16        ;up
-    Else if (dir = 1)
-         wpalam |= -(delta << 16)       ;down
-    Else ifInstring A_ThisHotkey, WheelUp
-         wpalam |=   delta << 16        ;up
-    Else wpalam |= -(delta << 16)       ;down
+	; 縦:WM_MOUSEWHELL(0x20A) 横:WM_MOUSEHWHEEL(0x20E) 2014.12.05
+	msg   := mode=0||RegExMatch(A_ThisHotkey, "Wheel(Up|Down)") ? 0x20A : 0x20E
+	wpalam|= (dir=0||RegExMatch(A_ThisHotkey, "Wheel(Up|Left)") ? 1:-1) * (delta<<16)
 
     ; lParam: XY座標
     my += (my < 0) ? 0xFFFF : 0  ;マルチディスプレイ対策 2009.06.12
     mx += (mx < 0) ? 0xFFFF : 0
     lpalam := (my << 16) | mx
 
-    ;WM_MOUSEWHELL
-    PostMessage, 0x20A, %wpalam%, %lpalam%, , ahk_id %hwnd%
+    ;WM_MOUSE(H)WHELL
+    PostMessage, %msg%, %wpalam%, %lpalam%, , ahk_id %hwnd%
 }
 
 SCROLL(hwnd,mode=0,shwnd=0,dir="", ScrlCnt=1,ASpeed=1,ATOut=300)
@@ -390,17 +391,18 @@ SCROLL(hwnd,mode=0,shwnd=0,dir="", ScrlCnt=1,ASpeed=1,ATOut=300)
     ;wParam: 方向
     if (dir = "")
     {
-        ifInstring A_ThisHotkey, WheelUp
+        If (RegExMatch(A_ThisHotkey, "Wheel(Up|Left)"))
              dir = 0                        ;SB_LINEUP   / SB_LINELEFT
         Else dir = 1                        ;SB_LINEDOWN / SB_LINERIGHT
     }
     
     ;0x114:WM_HSCROLL  0x115:WM_VSCROLL
-    msg := 0x115 - mode
+    msg  := 0x115 - mode
 
     Loop, %ACount%
-        PostMessage, %msg%, %dir%, %shwnd%, , ahk_id %hwnd%
-    PostMessage, %msg%, 8, %shwnd%, , ahk_id %hwnd% ;SB_ENDSCROLL
+;        PostMessage, %msg%, %dir%, %shwnd%, , ahk_id %hwnd%
+        PostMessage, msg, dir, shwnd,, ahk_id %hwnd%
+   ; PostMessage, %msg%, 8, %shwnd%, , ahk_id %hwnd% ;SB_ENDSCROLL
 }
 
 WA_Throttle() {
