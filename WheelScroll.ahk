@@ -4,7 +4,7 @@
 ;   ・加速対応
 ;   ・Word / Excel / VBE / 秀丸等の分割ペインも互換スクロールで操作可能
 ;
-;   単体 / 組込み両対応  2008/05/25 (AutoHotkey_L 1.1.14.04)
+;   単体 / 組込み両対応  2008/05/25 (AutoHotkey_L 1.1.24.00)
 ;
 ;   組込み時 
 ;     #Include WheelScroll.ahk
@@ -17,10 +17,20 @@
 ;               (TrackWheelの旧バージョンから拝借)
 ;   2012.11.08  U64対応 Uint → Ptr、エンコードをUTF-8に変更
 ;   2014.03.18  コメント修正
-;	2014.12.05  VISTA以降のチルトホイール(従来の互換横スクロールではなく)に対応
-;				チルトホットキー：WheelLeft/Ritht
-;				チルトホイールコマンド : WM_MOUSEHWHEEL
-;	2015.07.11  コメント修正
+;   2014.12.05  VISTA以降のチルトホイール(従来の互換横スクロールではなく)に対応
+;               チルトホットキー：WheelLeft/Ritht
+;               チルトホイールコマンド : WM_MOUSEHWHEEL
+;   2015.07.11  コメント修正
+;
+;   2017.10.23  プチフリ対策のための調査 WM_NCHITTESTを捨てていいかどうか
+;               チルトホイールのないマウスで疑似チルトに失敗していた問題を修正
+;               横スクロールの基本動作を互換SCROLL固定にするのをやめてみるテスト
+;   2017.11.16  win10 モダンUI対策(暫定) モダンUIはリダイレクト方法不明
+;               窓をアクティブにしてから Send,ホイールでOSにお任せすることにした
+;   2017.12.19  モダンUI対策 OS標準の「ホバーしたときに非アクティブウィンドウスクロールする」
+;               の状態を確認するようにした
+;               ホバー…スクロールする ON  → OSにおまかせ
+;               ホバー…スクロールする OFF → アクティブ化してからOSにおまかせ
 
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ;   単体起動用
@@ -36,6 +46,7 @@ WheelAutoExecute:
     SendMode Input              ; 送信中にユーザー操作を後回しにする。
     Gosub,WheelInit
     Hotkey,^ESC, WheelExit     ;終了： [Ctrl]+[ESC]
+    SetTitleMatchMode ,RegEx    ;1:前方 2:中間 3:完全 RegEx:正規表現
 return
 WheelExit:
     exitapp
@@ -61,36 +72,34 @@ WheelInit:
     ScrlCount         = 1           ;互換スクロール行数
 
     ; AcclMode = 1 オプション
-	; ホイール加速◆改造版
-	minThrottle      := 2           ; 最小加速率
-	maxThrottle      := 7           ; 最大加速率
-	minWheelSpeed    := 5           ; 最小加速率になるホイール回転速度 (ノッチ/秒)
-	maxWheelSpeed    := 30          ; 最大加速率になるホイール回転速度 (ノッチ/秒)
+    ; ホイール加速◆改造版
+    minThrottle      := 2           ; 最小加速率
+    maxThrottle      := 7           ; 最大加速率
+    minWheelSpeed    := 5           ; 最小加速率になるホイール回転速度 (ノッチ/秒)
+    maxWheelSpeed    := 30          ; 最大加速率になるホイール回転速度 (ノッチ/秒)
 
-;	minThrottle      := 10           ; 最小加速率
-;	maxThrottle      := 30           ; 最大加速率
-;	minWheelSpeed    := 20           ; 最小加速率になるホイール回転速度 (ノッチ/秒)
-;	maxWheelSpeed    := 120          ; 最大加速率になるホイール回転速度 (ノッチ/秒)
-	WA_Debug         := false       ; true にすると加速率とホイール回転速度が表示される
+;   minThrottle      := 10           ; 最小加速率
+;   maxThrottle      := 30           ; 最大加速率
+;   minWheelSpeed    := 20           ; 最小加速率になるホイール回転速度 (ノッチ/秒)
+;   maxWheelSpeed    := 120          ; 最大加速率になるホイール回転速度 (ノッチ/秒)
+    WA_Debug         := false       ; true にすると加速率とホイール回転速度が表示される
 
     ;ホイールで動かすコントロールのクラスリスト
     MouseWhellList  =MozillaWindowClass
     MouseHWhellList =MozillaWindowClass
-;    				,Excel7
-;    				,XLMAIN
 
     ;互換モードで動かすコントロールのクラスリスト
     VScroolList =  MdiClient            ;MDI親 (MS-Accessなど)
                   ,VbaWindow            ;VisualBasicEditor
                   ,_WwB                 ;MS-Word(編集領域全体)
-;                  ,Excel7               ;MS-Excel
 ;;;;;              ,OModule                ;MS-Access97   2008.05.20
 
-    HScroolList =  HM32CLIENT			;秀丸
-    			  ,TLimitedScrollBox	;Leeyesのビューア部 
+    HScroolList =  ; HM32CLIENT         ;秀丸
+                  ,Excel7               ;MS-Excel(2007)
+                  ,TLimitedScrollBox    ;Leeyesのビューア部 
+                  ,SysTreeView32        ;hh.exe(chm版ヘルプビューア)
 
-
-	;事前アクティブ化リスト 2012.08.13
+    ;事前アクティブ化リスト 2012.08.13
     ActivateList = TscShellContainerClass  ;リモートデスクトップ WinClass
 
     ;MDI事前アクティブ化リスト (ｱｸﾃｨﾌﾞ子ｳｨﾝﾄﾞｳのみﾊﾞｰがあるｱﾌﾟﾘなど)
@@ -104,6 +113,7 @@ WheelInit:
 
     ;兄弟スクロールバー : ｽｸﾛｰﾙﾊﾞｰが配下ではなく同列にあるｱﾌﾟﾘ
     BrotherScroolBarList = TkfInnerView.UnicodeClass    ;萌ディタ
+,
 
     ;禁止リスト：ｽｸﾛｰﾙﾊﾝﾄﾞﾙが取れない時は、互換モードを使用しない
     NullShwndTabooList = Excel7         ;MS-Excel(クラッシュ対策)
@@ -119,16 +129,44 @@ return
 ;==============================================
 ;     Hotkeys
 ;==============================================
+
+; /***** win10モダンUI用
+#If MouseIsOverAndWheelRouting("ahk_class ApplicationFrameWindow|HH Parent")
+WheelUp::       Send,{WheelUp}
+WheelDown::     Send,{WheelDown}
+WheelLeft::     Send,{WheelLeft}
+WheelRight::    Send,{WheelRight}
+
+MouseIsOverAndWheelRouting(WinTitle) {
+    RegRead,mwr,HKCU,Control Panel\Desktop,MouseWheelRouting
+    if (mwr < 2)
+        return
+    MouseGetPos,,, Win
+    Return WinExist(WinTitle . " ahk_id " . Win)
+}
+; */
+
+;#IfWinActive ahk_class HH Parent
+;WheelDown::    Send,{WheelDown}
+;WheelUp::      Send,{WheelUp}
+
 #IfWinActive
 *WheelDown::    WheelRedirect()
 *WheelUp::      WheelRedirect()
-*WheelLeft::	WheelRedirect(1)  ; 2014.12.05追加
-*WheelRight::	WheelRedirect(1)  ; 2014.12.05追加
+*WheelLeft::    WheelRedirect(1)  ; 2014.12.05追加
+*WheelRight::   WheelRedirect(1)  ; 2014.12.05追加
 
+/*****  チルトが無いマウス用
 ;Shiftホイールで横スクロール
 +WheelDown::    WheelRedirect(1)
 +WheelUp::      WheelRedirect(1)
 ;
+;X1+ホイールで横スクロール 2017.10.20
+XButton1 & WheelUp:: WheelRedirect(1,0)
+XButton1 & WheelDown:: WheelRedirect(1,1)
+XButton1:: XButton1
+*/
+
 
 ;==============================================
 ;     Functions
@@ -148,50 +186,71 @@ WheelRedirect(mode=0,dir="")
     CoordMode,Mouse,Screen
     MouseGetPos,mx,my,hwnd,ctrl,3
     WinGetClass,wcls, ahk_id %hwnd%
+
+/*
     SendMessage,0x84,0,% (my<<16)|mx,,ahk_id %ctrl% ;WM_NCHITTEST
+;    If (ErrorLevel = 0xFFFFFFFF)
+;        MouseGetPos,,,,ctrl,2
+
+    ;※※※ WM_NCHITTEST テスト  ※※※
     If (ErrorLevel = 0xFFFFFFFF)
+    {
         MouseGetPos,,,,ctrl,2
+        tooltip,ctrlhwd error
+        settimer WA_EraseToolTip, 10000
+        
+    }
+    ;※※※ WM_NCHITTEST テスト  ※※※
+*/
+
     ifEqual,ctrl,,  SetEnv,ctrl,%hwnd%              ;2008.05.25
     WinGetClass,ccls,ahk_id %ctrl%
     mccls := ccls                                   ;2009.07.22    秀丸v8β 対応
 
 
-	;---- アプリ個別処理 ----
-	;※仮想PC、他PCリモート制御に関しては通常のウィンドウと扱いが違うため
-	;  個別対処が必要かも
-;	CoordMode,ToolTip,Screen
-;	tooltip,%wcls%,50,50
+    ;---- アプリ個別処理 ----
+    ;※仮想PC、他PCリモート制御に関しては通常のウィンドウと扱いが違うため
+    ;  個別対処が必要かも
+;   CoordMode,ToolTip,Screen
+;   tooltip,%wcls%,50,50
 
-	key := RegExReplace(A_ThisHotkey, "\*" ,"")
+    key := RegExReplace(A_ThisHotkey, "\*" ,"")
 
-	;Mouse without Borders 2012.08.13
-	;スクロール制御はクライアントに任せる (Class名は環境で変動するかも)
-	if  (Instr(wcls,"WindowsForms10.Window.8.app.0.33c0d9d") && mx==0 && my==0) {
-		Send,{%key%}
-		return
-	}
+    ;Mouse without Borders 2012.08.13
+    ;スクロール制御はクライアントに任せる (Class名は環境で変動するかも)
+    if  (Instr(wcls,"WindowsForms10.Window.8.app.0.33c0d9d") && mx==0 && my==0) {
+        Send,{%key%}
+        return
+    }
 
-	;docuworksズーム 2011.20.34 (暫定)
-	if Instr(wcls,"Afx:400000:b:10013:"){
-	    if (Instr(A_ThisHotkey,"Up"))
-	        ControlSend,AfxFrameOrView422,{NumpadAdd},DocuWorks
-	    else
-	        ControlSend,AfxFrameOrView422,{NumpadSub},DocuWorks
-	    return
-	}
+    ;docuworksズーム 2011.20.34 (暫定)
+    if Instr(wcls,"Afx:400000:b:10013:"){
+        if (Instr(A_ThisHotkey,"Up"))
+            ControlSend,AfxFrameOrView422,{NumpadAdd},DocuWorks
+        else
+            ControlSend,AfxFrameOrView422,{NumpadSub},DocuWorks
+        return
+    }
+    
+    ;Microsoft Edge (とwin10 OS の「アプリ」) 2017.11.15
+    if (wcls == "ApplicationFrameWindow") {
+        WinActivate ,ahk_id %hwnd%
+        Send,{%key%}
+        return
+    }
 
-	;---- カスタマイズ適用 -----
-	;事前アクティブ化リストチェック : 非ｱｸﾃｨﾌﾞｳｨﾝﾄﾞｳをｱｸﾃｨﾌﾞ化 2012.08.13
+    ;---- カスタマイズ適用 -----
+    ;事前アクティブ化リストチェック : 非ｱｸﾃｨﾌﾞｳｨﾝﾄﾞｳをｱｸﾃｨﾌﾞ化 2012.08.13
     if wcls in %ActivateList%
     {
-		WinActivate ,ahk_class %wcls%
-	}
+        WinActivate ,ahk_class %wcls%
+    }
 
     ;無視リストチェック：1階層上のコントロールを制御対象とする
     Ptr := !A_PtrSize ? "UInt" : "Ptr"
     ifInString, BypassCtlList, %ccls%
     {
-        ctrl := DllCall("GetParent",Ptr,ctrl, Ptr)	;U64 2012.11.09
+        ctrl := DllCall("GetParent",Ptr,ctrl, Ptr)  ;U64 2012.11.09
         WinGetClass,ccls,ahk_id %ctrl%
     }
 
@@ -202,14 +261,17 @@ WheelRedirect(mode=0,dir="")
         SendMessage, 0x229, 0,0,,ahk_id %MdiClient% ;WM_MDIGETACTIVE
         if (ctrl != ErrorLevel) {
             if(ccls = "Excel7")                    ;Excelカスタム
-			        ControlClick,,ahk_id %ctrl%     ; (改)MID小窓をクリックして前面にならないようにした 2009.07.22
+                    ControlClick,,ahk_id %ctrl%     ; (改)MID小窓をクリックして前面にならないようにした 2009.07.22
             Else    PostMessage,0x222, %ctrl%,0,,ahk_id %MdiClient%
         }
     }
     scnt := GetScrollBarHwnd(shwnd,mx,my,ctrl,mode,mccls) ;ｽｸﾛｰﾙﾊﾝﾄﾞﾙ取得 2009.07.22
 
+
     ;スクロール動作指定
-    scmode := DefaultScrollMode<<1  | mode
+;    scmode := DefaultScrollMode<<1  | mode
+    scmode := DefaultScrollMode<<1      ;横スクロールの基本動作を互換SCROLL固定にするのをやめてみるテスト 2017.10.23
+                                        ;(チルト無効ソフトが多いようならDefaultHScrollModeを作るかも?
     if ccls in %HDisavledList%          ;横スクロール禁止
         scmode &= 0x10
     if ccls in %MouseWhellList%         ;ホイールモード
@@ -219,11 +281,11 @@ WheelRedirect(mode=0,dir="")
 
     ;チルト動作指定 2014.12.05
     if (mode=1 || RegExMatch(A_ThisHotkey, "Wheel(Left|Right)")) {
-	    if ccls in %MouseHWhellList%        ;ホイールモード(チルト)
-	    	scmode &= 0x10
-	    if ccls in %HScroolList%			;互換モード(横スクロール)
-	    	scmode |= 0x10
-	}
+        if ccls in %MouseHWhellList%        ;ホイールモード(チルト)
+            scmode &= 0x10
+        if ccls in %HScroolList%            ;互換モード(横スクロール)
+            scmode |= 0x10
+    }
 
     if (!shwnd) {                       ;互換モード禁止リスト
         if ccls in %NullShwndTabooList%
@@ -323,7 +385,7 @@ MOUSEWHELL(hwnd,mx,my,mode="",dir="", ASpeed=1,ATOut=300)
 ; WM_MOUSEWHELLによる任意コントロールスクロール
 ;       hwnd        該当コントロールのウィンドウハンドル
 ;       mx,my       マウス位置
-;		mode		0:縦 1:横 (2014.12.05)
+;       mode        0:縦 1:横 (2014.12.05)
 ;       dir         進行方向 0:UP(Left) 1:DOWN(Right)
 ;
 ;       ASpeed       :加速時の倍率(0で加速OFF)
@@ -353,9 +415,9 @@ MOUSEWHELL(hwnd,mx,my,mode="",dir="", ASpeed=1,ATOut=300)
             | GetKeyState("MButton") <<4 | GetKeyState("XButton1")<<5
             | GetKeyState("XButton2")<<6
 
-	; 縦:WM_MOUSEWHELL(0x20A) 横:WM_MOUSEHWHEEL(0x20E) 2014.12.05
-	msg   := mode=0||RegExMatch(A_ThisHotkey, "Wheel(Up|Down)") ? 0x20A : 0x20E
-	wpalam|= (dir=0||RegExMatch(A_ThisHotkey, "Wheel(Up|Left)") ? 1:-1) * (delta<<16)
+    ; 縦:WM_MOUSEWHELL(0x20A) 横:WM_MOUSEHWHEEL(0x20E) 2014.12.05 (2017.10.23修正)
+    msg   := mode=0||(!mode&&RegExMatch(A_ThisHotkey, "Wheel(Up|Down)")) ? 0x20A : 0x20E
+    wpalam|= (dir=0||(!dir&& RegExMatch(A_ThisHotkey, "Wheel(Up|Left)")) ? 1:-1) * (delta<<16)
 
     ; lParam: XY座標
     my += (my < 0) ? 0xFFFF : 0  ;マルチディスプレイ対策 2009.06.12
@@ -398,60 +460,58 @@ SCROLL(hwnd,mode=0,shwnd=0,dir="", ScrlCnt=1,ASpeed=1,ATOut=300)
     
     ;0x114:WM_HSCROLL  0x115:WM_VSCROLL
     msg  := 0x115 - mode
-
     Loop, %ACount%
-;        PostMessage, %msg%, %dir%, %shwnd%, , ahk_id %hwnd%
-        PostMessage, msg, dir, shwnd,, ahk_id %hwnd%
-   ; PostMessage, %msg%, 8, %shwnd%, , ahk_id %hwnd% ;SB_ENDSCROLL
+        PostMessage, %msg%, %dir%, %shwnd%, , ahk_id %hwnd%
+
 }
 
 WA_Throttle() {
 ;----------------------------------------------------------
 ; 加速率を線形補間で計算する
-; 	minThrottle   = 最小加速率
-; 	maxThrottle   = 最大加速率
-; 	minWheelSpeed = 最小加速率になるホイール回転速度 (ノッチ/秒)
-; 	maxWheelSpeed = 最大加速率になるホイール回転速度 (ノッチ/秒)
-; 	WA_Debug      = デバッグモード
+;   minThrottle   = 最小加速率
+;   maxThrottle   = 最大加速率
+;   minWheelSpeed = 最小加速率になるホイール回転速度 (ノッチ/秒)
+;   maxWheelSpeed = 最大加速率になるホイール回転速度 (ノッチ/秒)
+;   WA_Debug      = デバッグモード
 ;----------------------------------------------------------
-	global minThrottle, maxThrottle, minWheelSpeed, maxWheelSpeed, WA_Debug, tooltiptext
-	static prevspd := 0
-	if (A_PriorHotkey <> A_ThisHotkey || A_TimeSincePriorHotkey <= 0) {
-		gosub WA_EraseToolTip
-		prevspd := 0
-		nextspd := 0
-	} else {
-		nextspd := 1000 / A_TimeSincePriorHotkey ; 現在のホイール回転速度 (ノッチ/秒)
-	}
-	spd := (prevspd + nextspd) / 2 ; 直近 2 ノッチの平均回転速度 (ノッチ/秒)
-	if (spd < minWheelSpeed) {
-		thr := 1
-	} else {
-		thr := floor((spd - minWheelSpeed) * (maxThrottle - minThrottle) / (maxWheelSpeed - minWheelSpeed) + minThrottle)
-	}
-	if (thr > maxThrottle) {
-		thr := maxThrottle
-	}
-	
-	if (WA_Debug) {
-		tooltiptext .= "x" . thr . " (" . round(spd, 1)
-; 		tooltiptext .= " = avg(" . round(nextspd, 1) . " + " . round(prevspd, 1) . ")"
-		tooltiptext .= " notch/s)`n"
-		tooltip % tooltiptext
-		settimer WA_EraseToolTip, 10000
-	}
-	prevspd := nextspd
-	return thr
+    global minThrottle, maxThrottle, minWheelSpeed, maxWheelSpeed, WA_Debug, tooltiptext
+    static prevspd := 0
+    if (A_PriorHotkey <> A_ThisHotkey || A_TimeSincePriorHotkey <= 0) {
+        gosub WA_EraseToolTip
+        prevspd := 0
+        nextspd := 0
+    } else {
+        nextspd := 1000 / A_TimeSincePriorHotkey ; 現在のホイール回転速度 (ノッチ/秒)
+    }
+    spd := (prevspd + nextspd) / 2 ; 直近 2 ノッチの平均回転速度 (ノッチ/秒)
+    if (spd < minWheelSpeed) {
+        thr := 1
+    } else {
+        thr := floor((spd - minWheelSpeed) * (maxThrottle - minThrottle) / (maxWheelSpeed - minWheelSpeed) + minThrottle)
+    }
+    if (thr > maxThrottle) {
+        thr := maxThrottle
+    }
+    
+    if (WA_Debug) {
+        tooltiptext .= "x" . thr . " (" . round(spd, 1)
+;       tooltiptext .= " = avg(" . round(nextspd, 1) . " + " . round(prevspd, 1) . ")"
+        tooltiptext .= " notch/s)`n"
+        tooltip % tooltiptext
+        settimer WA_EraseToolTip, 10000
+    }
+    prevspd := nextspd
+    return thr
 }
 
 WA_EraseToolTip:
 ;----------------------------------------------------------
 ; ツールチップを消す
 ;----------------------------------------------------------
-	tooltiptext := ""
-	tooltip
-	settimer WA_EraseToolTip, off
-	return
+    tooltiptext := ""
+    tooltip
+    settimer WA_EraseToolTip, off
+    return
 
 ;----------------------------------------------------------
 ; <参考> ホイール加速の別実装
