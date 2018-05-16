@@ -29,9 +29,17 @@
 ;               窓をアクティブにしてから Send,ホイールでOSにお任せすることにした
 ;   2017.12.19  モダンUI対策 OS標準の「ホバーしたときに非アクティブウィンドウスクロールする」
 ;               の状態を確認するようにした
-;               ホバー…スクロールする ON  → OSにおまかせ
-;               ホバー…スクロールする OFF → アクティブ化してからOSにおまかせ
-
+;                   ホバー…スクロールする ON  → OSにおまかせ
+;                   ホバー…スクロールする OFF → アクティブ化してからOSにおまかせ
+;               Shift+ホイール での横スクロールホットキーを無効化
+;               (チルトマウスの普及率的に不要だろうとコメントアウトしてしまいましたすみません)
+;   2018.05.16  Shift+ホイール での横スクロールホットキーの復帰
+;               Excelで分割/固定ウィンドウでスクロールできなくなっていたのを修正
+;                  分割時 : 縦横共に互換モードに戻した(操作するスクロールバーを指定する必要があるため)
+;                  固定時 : 非表示のスクロールバーは見ないようにした
+;               モダンUI対策 起動時に1回だけレジストリを確認するように変更
+;               (今まではホイール回すたびに毎回見に行ってた)
+;
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ;   単体起動用
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -92,10 +100,11 @@ WheelInit:
     VScroolList =  MdiClient            ;MDI親 (MS-Accessなど)
                   ,VbaWindow            ;VisualBasicEditor
                   ,_WwB                 ;MS-Word(編集領域全体)
-;;;;;              ,OModule                ;MS-Access97   2008.05.20
+;;;;;             ,OModule              ;MS-Access97   2008.05.20
+                  ,Excel7               ;MS-Excel(2016) ウィンドウ分割時用
 
     HScroolList =  ; HM32CLIENT         ;秀丸
-                  ,Excel7               ;MS-Excel(2007)
+                  ,Excel7               ;MS-Excel(2016)
                   ,TLimitedScrollBox    ;Leeyesのビューア部 
                   ,SysTreeView32        ;hh.exe(chm版ヘルプビューア)
 
@@ -113,7 +122,7 @@ WheelInit:
 
     ;兄弟スクロールバー : ｽｸﾛｰﾙﾊﾞｰが配下ではなく同列にあるｱﾌﾟﾘ
     BrotherScroolBarList = TkfInnerView.UnicodeClass    ;萌ディタ
-,
+
 
     ;禁止リスト：ｽｸﾛｰﾙﾊﾝﾄﾞﾙが取れない時は、互換モードを使用しない
     NullShwndTabooList = Excel7         ;MS-Excel(クラッシュ対策)
@@ -124,13 +133,19 @@ WheelInit:
     HDisavledList = TLimitedScrollBox       ; Leeyesのビューア部 
                   , TVTest Video Container  ; 動画画面 (TVTest) 2014.05.01
 
+
+  ;****** win10 OS標準のリダイレクト設定の確認  2018.05.16 ****
+   ;「ホバーしたときに非アクティブウィンドウスクロールする」
+    global  WS_MouseWheelRouting
+    RegRead,mwr,HKCU,Control Panel\Desktop,MouseWheelRouting
+    WS_MouseWheelRouting := ErrorLevel|mwr<2 ? False : True
+
 return
 
 ;==============================================
 ;     Hotkeys
 ;==============================================
-
-; /***** win10モダンUI用
+; ***** win10モダンUI用
 #If MouseIsOverAndWheelRouting("ahk_class ApplicationFrameWindow|HH Parent")
 WheelUp::       Send,{WheelUp}
 WheelDown::     Send,{WheelDown}
@@ -138,17 +153,11 @@ WheelLeft::     Send,{WheelLeft}
 WheelRight::    Send,{WheelRight}
 
 MouseIsOverAndWheelRouting(WinTitle) {
-    RegRead,mwr,HKCU,Control Panel\Desktop,MouseWheelRouting
-    if (mwr < 2)
-        return
+    global  WS_MouseWheelRouting
     MouseGetPos,,, Win
-    Return WinExist(WinTitle . " ahk_id " . Win)
+    Return WS_MouseWheelRouting ? WinExist(WinTitle . " ahk_id " . Win) : 0
 }
-; */
 
-;#IfWinActive ahk_class HH Parent
-;WheelDown::    Send,{WheelDown}
-;WheelUp::      Send,{WheelUp}
 
 #IfWinActive
 *WheelDown::    WheelRedirect()
@@ -156,17 +165,17 @@ MouseIsOverAndWheelRouting(WinTitle) {
 *WheelLeft::    WheelRedirect(1)  ; 2014.12.05追加
 *WheelRight::   WheelRedirect(1)  ; 2014.12.05追加
 
-/*****  チルトが無いマウス用
+; *****  チルトが無いマウス用
 ;Shiftホイールで横スクロール
 +WheelDown::    WheelRedirect(1)
 +WheelUp::      WheelRedirect(1)
+
+
 ;
 ;X1+ホイールで横スクロール 2017.10.20
-XButton1 & WheelUp:: WheelRedirect(1,0)
+XButton1 & WheelUp::   WheelRedirect(1,0)
 XButton1 & WheelDown:: WheelRedirect(1,1)
 XButton1:: XButton1
-*/
-
 
 ;==============================================
 ;     Functions
@@ -182,6 +191,7 @@ WheelRedirect(mode=0,dir="")
            ,MouseWhellList, VScroolList, MdiActivateList
            ,BypassCtlList, NullShwndTabooList, HDisavledList
            ,ActivateList, MouseHWhellList, HScroolList
+           ,WS_MouseWheelRouting
 
     CoordMode,Mouse,Screen
     MouseGetPos,mx,my,hwnd,ctrl,3
@@ -234,7 +244,8 @@ WheelRedirect(mode=0,dir="")
     
     ;Microsoft Edge (とwin10 OS の「アプリ」) 2017.11.15
     if (wcls == "ApplicationFrameWindow") {
-        WinActivate ,ahk_id %hwnd%
+        if (!WS_MouseWheelRouting && !WinActive("ahk_id " hwnd)) ; 2018.05.16
+            WinActivate ,ahk_id %hwnd%
         Send,{%key%}
         return
     }
@@ -333,6 +344,9 @@ GetScrollBarHwnd(byref shwnd, mx,my,Cntlhwnd,mode=0,mccls="")
     Loop,Parse,lst,`n
     {
         ifNotInstring A_LoopField , ScrollBar
+            Continue
+        ControlGet,vis,Visible,,%A_LoopField%,ahk_id %Cntlhwnd%   ; 2018.05.16
+        if (!vis)
             Continue
         ControlGet,hwnd, Hwnd,,%A_LoopField%,ahk_id %Cntlhwnd%
         WinGetpos, sx,sy,sw,sh, ahk_id %hwnd%
